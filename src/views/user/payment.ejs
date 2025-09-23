@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || "Payment" %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <style>
+    .payment-option {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .payment-option:hover {
+      border-color: #007bff;
+      box-shadow: 0 4px 15px rgba(0,123,255,0.2);
+    }
+    .payment-option.selected {
+      border-color: #007bff;
+      background-color: #f8f9ff;
+    }
+    .booking-summary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 15px;
+    }
+    .step-indicator {
+      background-color: #007bff;
+      color: white;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+    }
+    .secure-badge {
+      background: linear-gradient(45deg, #28a745, #20c997);
+      color: white;
+      border-radius: 20px;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body class="bg-light">
+
+  <!-- Header -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href="/user/<%= user.id %>/dashboard">
+        <i class="bi bi-bus-front"></i> Transport System
+      </a>
+      <div class="navbar-nav ms-auto">
+        <a class="nav-link" href="/user/<%= user.id %>/dashboard">Dashboard</a>
+        <a class="nav-link" href="/user/<%= user.id %>/bookings">My Bookings</a>
+        <a class="nav-link" href="/auth/logout">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <!-- Progress Steps -->
+    <div class="row justify-content-center mb-4">
+      <div class="col-md-8">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+            <div class="step-indicator bg-success me-2">✓</div>
+            <span class="fw-bold text-success">Select Route</span>
+          </div>
+          <div class="flex-grow-1 mx-3">
+            <hr class="border-success" style="height: 2px;">
+          </div>
+          <div class="d-flex align-items-center">
+            <div class="step-indicator bg-success me-2">✓</div>
+            <span class="fw-bold text-success">Booking Details</span>
+          </div>
+          <div class="flex-grow-1 mx-3">
+            <hr class="border-primary" style="height: 2px;">
+          </div>
+          <div class="d-flex align-items-center">
+            <div class="step-indicator me-2">3</div>
+            <span class="fw-bold text-primary">Payment</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- Booking Summary -->
+      <div class="col-lg-4 mb-4">
+        <div class="card booking-summary h-100">
+          <div class="card-body">
+            <h5 class="card-title">
+              <i class="bi bi-receipt"></i> Booking Summary
+            </h5>
+            <hr class="border-white">
+            
+            <div class="mb-3">
+              <div class="d-flex justify-content-between mb-2">
+                <span>Route:</span>
+                <strong><%= bookingData.route.routeNumber %></strong>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Journey:</span>
+                <strong><%= bookingData.route.origin %> → <%= bookingData.route.destination %></strong>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Date:</span>
+                <strong><%= new Date(bookingData.schedule.journeyDate).toLocaleDateString() %></strong>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Time:</span>
+                <strong><%= bookingData.schedule.departureTime %> - <%= bookingData.schedule.arrivalTime %></strong>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Passengers:</span>
+                <strong><%= bookingData.passengers.length %></strong>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Bus:</span>
+                <strong><%= bookingData.schedule.busNumber %></strong>
+              </div>
+            </div>
+
+            <hr class="border-white">
+            <div class="d-flex justify-content-between mb-2">
+              <span>Subtotal:</span>
+              <span>₹<%= (bookingData.totalPrice / 1.07).toFixed(2) %></span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Taxes & Fees:</span>
+              <span>₹<%= (bookingData.totalPrice * 0.07).toFixed(2) %></span>
+            </div>
+            <hr class="border-white">
+            <div class="d-flex justify-content-between">
+              <strong>Total Amount:</strong>
+              <strong class="fs-5">₹<%= bookingData.totalPrice %></strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment Options -->
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">
+              <i class="bi bi-credit-card"></i> Select Payment Method
+            </h4>
+            <div class="secure-badge">
+              <i class="bi bi-shield-check"></i> Secure Payment
+            </div>
+          </div>
+          <div class="card-body">
+            <form id="paymentForm" action="/user/<%= user.id %>/bookings/confirm" method="POST">
+              <!-- Hidden form data -->
+              <input type="hidden" name="bookingData" value="<%= JSON.stringify(bookingData) %>">
+              
+              <div class="row mb-4">
+                <!-- Card Payment -->
+                <div class="col-md-6 mb-3">
+                  <div class="payment-option p-3 h-100" data-payment="card">
+                    <div class="text-center">
+                      <i class="bi bi-credit-card display-6 text-primary"></i>
+                      <h5 class="mt-2">Credit/Debit Card</h5>
+                      <p class="text-muted small">Visa, MasterCard, RuPay</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- UPI Payment -->
+                <div class="col-md-6 mb-3">
+                  <div class="payment-option p-3 h-100" data-payment="upi">
+                    <div class="text-center">
+                      <i class="bi bi-phone display-6 text-success"></i>
+                      <h5 class="mt-2">UPI Payment</h5>
+                      <p class="text-muted small">Google Pay, PhonePe, Paytm</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Net Banking -->
+                <div class="col-md-6 mb-3">
+                  <div class="payment-option p-3 h-100" data-payment="netbanking">
+                    <div class="text-center">
+                      <i class="bi bi-bank display-6 text-info"></i>
+                      <h5 class="mt-2">Net Banking</h5>
+                      <p class="text-muted small">All major banks supported</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Wallet Payment -->
+                <div class="col-md-6 mb-3">
+                  <div class="payment-option p-3 h-100" data-payment="wallet">
+                    <div class="text-center">
+                      <i class="bi bi-wallet2 display-6 text-warning"></i>
+                      <h5 class="mt-2">Digital Wallet</h5>
+                      <p class="text-muted small">Paytm, Amazon Pay</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <input type="hidden" id="paymentMethod" name="paymentMethod" required>
+
+              <!-- Payment Details Form (Hidden initially) -->
+              <div id="cardPaymentForm" class="payment-form" style="display: none;">
+                <h6 class="mb-3"><i class="bi bi-credit-card"></i> Card Details</h6>
+                <div class="row">
+                  <div class="col-md-8 mb-3">
+                    <label class="form-label">Card Number</label>
+                    <input type="text" class="form-control" placeholder="1234 5678 9012 3456" 
+                           maxlength="19" id="cardNumber">
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <label class="form-label">CVV</label>
+                    <input type="text" class="form-control" placeholder="123" maxlength="3" id="cvv">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Expiry Month</label>
+                    <select class="form-select" id="expiryMonth">
+                      <option value="">Month</option>
+                      <% for(let i = 1; i <= 12; i++) { %>
+                        <option value="<%= i.toString().padStart(2, '0') %>"><%= i.toString().padStart(2, '0') %></option>
+                      <% } %>
+                    </select>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label class="form-label">Expiry Year</label>
+                    <select class="form-select" id="expiryYear">
+                      <option value="">Year</option>
+                      <% for(let i = 2025; i <= 2035; i++) { %>
+                        <option value="<%= i %>"><%= i %></option>
+                      <% } %>
+                    </select>
+                  </div>
+                  <div class="col-12 mb-3">
+                    <label class="form-label">Cardholder Name</label>
+                    <input type="text" class="form-control" placeholder="Enter name as on card" id="cardholderName">
+                  </div>
+                </div>
+              </div>
+
+              <div id="upiPaymentForm" class="payment-form" style="display: none;">
+                <h6 class="mb-3"><i class="bi bi-phone"></i> UPI Details</h6>
+                <div class="mb-3">
+                  <label class="form-label">UPI ID</label>
+                  <input type="text" class="form-control" placeholder="yourname@upi" id="upiId">
+                </div>
+              </div>
+
+              <div id="netbankingPaymentForm" class="payment-form" style="display: none;">
+                <h6 class="mb-3"><i class="bi bi-bank"></i> Select Your Bank</h6>
+                <div class="mb-3">
+                  <select class="form-select" id="bankSelect">
+                    <option value="">Choose your bank</option>
+                    <option value="sbi">State Bank of India</option>
+                    <option value="hdfc">HDFC Bank</option>
+                    <option value="icici">ICICI Bank</option>
+                    <option value="axis">Axis Bank</option>
+                    <option value="pnb">Punjab National Bank</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="walletPaymentForm" class="payment-form" style="display: none;">
+                <h6 class="mb-3"><i class="bi bi-wallet2"></i> Select Wallet</h6>
+                <div class="mb-3">
+                  <select class="form-select" id="walletSelect">
+                    <option value="">Choose wallet</option>
+                    <option value="paytm">Paytm</option>
+                    <option value="amazonpay">Amazon Pay</option>
+                    <option value="phonepe">PhonePe</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Security Notice -->
+              <div class="alert alert-info mb-4">
+                <i class="bi bi-shield-check"></i>
+                <strong>Secure Payment:</strong> Your payment information is encrypted and secure. We do not store your card details.
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="d-flex justify-content-between">
+                <a href="/user/<%= user.id %>/bookings/form" class="btn btn-outline-secondary">
+                  <i class="bi bi-arrow-left"></i> Back to Details
+                </a>
+                <button type="submit" class="btn btn-success btn-lg" id="payButton" disabled>
+                  <i class="bi bi-lock"></i> Pay ₹<%= bookingData.totalPrice %>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const paymentOptions = document.querySelectorAll('.payment-option');
+      const paymentForms = document.querySelectorAll('.payment-form');
+      const paymentMethodInput = document.getElementById('paymentMethod');
+      const payButton = document.getElementById('payButton');
+
+      paymentOptions.forEach(option => {
+        option.addEventListener('click', function() {
+          // Remove selected class from all options
+          paymentOptions.forEach(opt => opt.classList.remove('selected'));
+          
+          // Add selected class to clicked option
+          this.classList.add('selected');
+          
+          // Hide all payment forms
+          paymentForms.forEach(form => form.style.display = 'none');
+          
+          // Show selected payment form
+          const paymentType = this.dataset.payment;
+          paymentMethodInput.value = paymentType;
+          
+          const formToShow = document.getElementById(paymentType + 'PaymentForm');
+          if (formToShow) {
+            formToShow.style.display = 'block';
+          }
+          
+          // Enable pay button
+          payButton.disabled = false;
+        });
+      });
+
+      // Card number formatting
+      const cardNumberInput = document.getElementById('cardNumber');
+      if (cardNumberInput) {
+        cardNumberInput.addEventListener('input', function() {
+          let value = this.value.replace(/\s/g, '').replace(/[^0-9]/gi, '');
+          let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+          this.value = formattedValue;
+        });
+      }
+
+      // Form submission with loading state
+      document.getElementById('paymentForm').addEventListener('submit', function() {
+        payButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Processing...';
+        payButton.disabled = true;
+      });
+    });
+  </script>
+</body>
+</html>

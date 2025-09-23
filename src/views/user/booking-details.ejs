@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || "Booking Details" %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <style>
+    .trip-summary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 15px;
+    }
+    .passenger-card {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+    }
+    .passenger-card:focus-within {
+      border-color: #007bff;
+      box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    }
+    .price-breakdown {
+      background-color: #f8f9fa;
+      border-radius: 10px;
+      border: 1px solid #dee2e6;
+    }
+    .total-price {
+      background: linear-gradient(45deg, #28a745, #20c997);
+      color: white;
+      border-radius: 10px;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .step-indicator {
+      background-color: #007bff;
+      color: white;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body class="bg-light">
+
+  <!-- Header -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href="/user/<%= user.id %>/dashboard">
+        <i class="bi bi-bus-front"></i> Transport System
+      </a>
+      <div class="navbar-nav ms-auto">
+        <a class="nav-link" href="/user/<%= user.id %>/dashboard">Dashboard</a>
+        <a class="nav-link" href="/user/<%= user.id %>/bookings">My Bookings</a>
+        <a class="nav-link" href="/auth/logout">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <!-- Progress Steps -->
+    <div class="row justify-content-center mb-4">
+      <div class="col-md-8">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+            <div class="step-indicator me-2">1</div>
+            <span class="fw-bold text-primary">Select Route</span>
+          </div>
+          <div class="flex-grow-1 mx-3">
+            <hr class="border-primary" style="height: 2px;">
+          </div>
+          <div class="d-flex align-items-center">
+            <div class="step-indicator me-2">2</div>
+            <span class="fw-bold text-primary">Booking Details</span>
+          </div>
+          <div class="flex-grow-1 mx-3">
+            <hr class="border-2">
+          </div>
+          <div class="d-flex align-items-center">
+            <div class="step-indicator bg-secondary me-2">3</div>
+            <span class="text-muted">Payment</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error/Success Messages -->
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <%= error %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    <% } %>
+
+    <div class="row">
+      <!-- Trip Summary -->
+      <div class="col-lg-4 mb-4">
+        <div class="card trip-summary h-100">
+          <div class="card-body">
+            <h5 class="card-title">
+              <i class="bi bi-geo-alt"></i> Trip Summary
+            </h5>
+            <hr class="border-white">
+            
+            <div class="mb-3">
+              <div class="d-flex justify-content-between mb-2">
+                <span>Route:</span>
+                <strong id="route-display">-</strong>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>From:</span>
+                <strong id="origin-display">-</strong>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>To:</span>
+                <strong id="destination-display">-</strong>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Date:</span>
+                <strong id="date-display">-</strong>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Time:</span>
+                <strong id="time-display">-</strong>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Bus:</span>
+                <strong id="bus-display">-</strong>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Driver:</span>
+                <strong id="driver-display">-</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Booking Form -->
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-header">
+            <h4 class="mb-0">
+              <i class="bi bi-person-lines-fill"></i> Passenger Details
+            </h4>
+          </div>
+          <div class="card-body">
+            <form id="bookingForm" action="/user/<%= user.id %>/bookings/process" method="POST">
+              <input type="hidden" id="scheduleId" name="scheduleId">
+              
+              <!-- Number of Passengers -->
+              <div class="row mb-4">
+                <div class="col-md-6">
+                  <label for="passengerCount" class="form-label">
+                    <i class="bi bi-people"></i> Number of Passengers *
+                  </label>
+                  <select class="form-select" id="passengerCount" name="passengerCount" required>
+                    <option value="1">1 Passenger</option>
+                    <option value="2">2 Passengers</option>
+                    <option value="3">3 Passengers</option>
+                    <option value="4">4 Passengers</option>
+                    <option value="5">5 Passengers</option>
+                    <option value="6">6 Passengers</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">
+                    <i class="bi bi-telephone"></i> Contact Phone *
+                  </label>
+                  <input type="tel" class="form-control" id="contactPhone" name="contactPhone" 
+                         placeholder="Your contact number" required>
+                </div>
+              </div>
+
+              <!-- Passenger Details Container -->
+              <div id="passengersContainer">
+                <!-- Passenger forms will be dynamically generated here -->
+              </div>
+
+              <!-- Price Breakdown -->
+              <div class="price-breakdown p-3 mb-4">
+                <h6 class="mb-3"><i class="bi bi-calculator"></i> Price Breakdown</h6>
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="d-flex justify-content-between mb-2">
+                      <span>Price per person:</span>
+                      <span>₹<span id="pricePerPerson">0</span></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                      <span>Number of passengers:</span>
+                      <span id="passengerCountDisplay">1</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                      <span>Subtotal:</span>
+                      <span>₹<span id="subtotal">0</span></span>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="d-flex justify-content-between mb-2">
+                      <span>Service charge (2%):</span>
+                      <span>₹<span id="serviceCharge">0</span></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                      <span>GST (5%):</span>
+                      <span>₹<span id="gst">0</span></span>
+                    </div>
+                    <hr>
+                    <div class="total-price p-2 text-center">
+                      <strong>Total: ₹<span id="totalAmount">0</span></strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <input type="hidden" id="totalPrice" name="totalPrice">
+
+              <!-- Action Buttons -->
+              <div class="d-flex justify-content-between">
+                <a href="/user/<%= user.id %>/bookings/new" class="btn btn-outline-secondary">
+                  <i class="bi bi-arrow-left"></i> Back to Routes
+                </a>
+                <button type="submit" class="btn btn-success btn-lg">
+                  <i class="bi bi-credit-card"></i> Proceed to Payment
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Load selected schedule data
+      const scheduleData = JSON.parse(sessionStorage.getItem('selectedSchedule') || '{}');
+      
+      if (scheduleData.scheduleId) {
+        // Populate trip summary
+        document.getElementById('route-display').textContent = scheduleData.routeNumber;
+        document.getElementById('origin-display').textContent = scheduleData.origin;
+        document.getElementById('destination-display').textContent = scheduleData.destination;
+        document.getElementById('date-display').textContent = scheduleData.date;
+        document.getElementById('time-display').textContent = `${scheduleData.departure} - ${scheduleData.arrival}`;
+        document.getElementById('bus-display').textContent = scheduleData.busNumber;
+        document.getElementById('driver-display').textContent = scheduleData.driver;
+        
+        // Set form data
+        document.getElementById('scheduleId').value = scheduleData.scheduleId;
+        document.getElementById('pricePerPerson').textContent = scheduleData.fare;
+      } else {
+        // Redirect back if no schedule selected
+        window.location.href = '/user/<%= user.id %>/bookings/new';
+      }
+
+      const passengerCountSelect = document.getElementById('passengerCount');
+      const passengersContainer = document.getElementById('passengersContainer');
+
+      function generatePassengerForms(count) {
+        passengersContainer.innerHTML = '';
+        
+        for (let i = 1; i <= count; i++) {
+          const passengerHtml = `
+            <div class="passenger-card p-3 mb-3">
+              <h6 class="mb-3">
+                <i class="bi bi-person"></i> Passenger ${i} Details
+              </h6>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Full Name *</label>
+                  <input type="text" class="form-control" name="passengers[${i-1}][name]" 
+                         placeholder="Enter full name" required>
+                </div>
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Age *</label>
+                  <input type="number" class="form-control" name="passengers[${i-1}][age]" 
+                         min="1" max="120" required>
+                </div>
+                <div class="col-md-3 mb-3">
+                  <label class="form-label">Gender *</label>
+                  <select class="form-select" name="passengers[${i-1}][gender]" required>
+                    <option value="">Select</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          `;
+          passengersContainer.insertAdjacentHTML('beforeend', passengerHtml);
+        }
+      }
+
+      function calculateTotalPrice() {
+        const pricePerPerson = parseFloat(scheduleData.fare || 0);
+        const passengerCount = parseInt(passengerCountSelect.value);
+        
+        const subtotal = pricePerPerson * passengerCount;
+        const serviceCharge = subtotal * 0.02; // 2% service charge
+        const gst = subtotal * 0.05; // 5% GST
+        const total = subtotal + serviceCharge + gst;
+
+        document.getElementById('passengerCountDisplay').textContent = passengerCount;
+        document.getElementById('subtotal').textContent = subtotal.toFixed(2);
+        document.getElementById('serviceCharge').textContent = serviceCharge.toFixed(2);
+        document.getElementById('gst').textContent = gst.toFixed(2);
+        document.getElementById('totalAmount').textContent = total.toFixed(2);
+        document.getElementById('totalPrice').value = total.toFixed(2);
+      }
+
+      passengerCountSelect.addEventListener('change', function() {
+        generatePassengerForms(parseInt(this.value));
+        calculateTotalPrice();
+      });
+
+      // Initialize
+      generatePassengerForms(1);
+      calculateTotalPrice();
+
+      // Form validation
+      document.getElementById('bookingForm').addEventListener('submit', function(e) {
+        const passengers = document.querySelectorAll('input[name*="[name]"]');
+        let allValid = true;
+        
+        passengers.forEach(input => {
+          if (!input.value.trim()) {
+            allValid = false;
+            input.classList.add('is-invalid');
+          } else {
+            input.classList.remove('is-invalid');
+          }
+        });
+
+        if (!allValid) {
+          e.preventDefault();
+          alert('Please fill in all passenger details.');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

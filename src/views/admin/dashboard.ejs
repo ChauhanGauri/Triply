@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || "Admin Dashboard - Booking Management" %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <style>
+    .stat-card {
+      border-left: 4px solid #007bff;
+      transition: transform 0.2s;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+    }
+    .stat-card.confirmed {
+      border-left-color: #28a745;
+    }
+    .stat-card.cancelled {
+      border-left-color: #dc3545;
+    }
+    .stat-card.users {
+      border-left-color: #17a2b8;
+    }
+    .stat-card.routes {
+      border-left-color: #ffc107;
+    }
+    .dashboard-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2rem 0;
+      margin-bottom: 2rem;
+    }
+    .table-hover tbody tr:hover {
+      background-color: #f8f9fa;
+    }
+    .status-badge {
+      font-size: 0.8em;
+      padding: 0.4em 0.8em;
+    }
+  </style>
+</head>
+<body class="bg-light">
+
+  <!-- Header -->
+  <div class="dashboard-header">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col">
+          <h1 class="mb-1"><i class="bi bi-speedometer2"></i> Admin Dashboard</h1>
+          <p class="mb-0">Public Transport Booking Management System</p>
+        </div>
+        <div class="col-auto">
+          <div class="btn-group" role="group">
+            <a href="/admin/bookings" class="btn btn-light me-2">
+              <i class="bi bi-ticket-detailed"></i> Bookings
+            </a>
+            <a href="/admin/routes" class="btn btn-light me-2">
+              <i class="bi bi-map"></i> Routes
+            </a>
+            <a href="/admin/schedules" class="btn btn-light me-2">
+              <i class="bi bi-calendar-event"></i> Schedules
+            </a>
+            <a href="/admin/users" class="btn btn-light me-2">
+              <i class="bi bi-people"></i> Users
+            </a>
+            <a href="/auth/logout" class="btn btn-outline-light">
+              <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+      <div class="col-md-3 mb-3">
+        <div class="card stat-card h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h6 class="card-subtitle mb-2 text-muted">Total Bookings</h6>
+                <h2 class="card-title mb-0"><%= data.stats.totalBookings %></h2>
+              </div>
+              <div class="align-self-center">
+                <i class="bi bi-ticket-detailed text-primary" style="font-size: 2rem;"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 mb-3">
+        <div class="card stat-card confirmed h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h6 class="card-subtitle mb-2 text-muted">Confirmed</h6>
+                <h2 class="card-title mb-0 text-success"><%= data.stats.confirmedBookings %></h2>
+              </div>
+              <div class="align-self-center">
+                <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 mb-3">
+        <div class="card stat-card cancelled h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h6 class="card-subtitle mb-2 text-muted">Cancelled</h6>
+                <h2 class="card-title mb-0 text-danger"><%= data.stats.cancelledBookings %></h2>
+              </div>
+              <div class="align-self-center">
+                <i class="bi bi-x-circle text-danger" style="font-size: 2rem;"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 mb-3">
+        <div class="card stat-card users h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h6 class="card-subtitle mb-2 text-muted">Total Users</h6>
+                <h2 class="card-title mb-0 text-info"><%= data.stats.totalUsers %></h2>
+              </div>
+              <div class="align-self-center">
+                <i class="bi bi-people text-info" style="font-size: 2rem;"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Management Modules -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <h3 class="mb-3"><i class="bi bi-gear"></i> Management Modules</h3>
+      </div>
+      <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body text-center">
+            <div class="mb-3">
+              <i class="bi bi-ticket-detailed text-primary" style="font-size: 3rem;"></i>
+            </div>
+            <h5 class="card-title">Booking Management</h5>
+            <p class="card-text text-muted">Manage customer bookings, view reservations, and handle cancellations</p>
+            <div class="d-grid gap-2">
+              <a href="/admin/bookings" class="btn btn-primary">
+                <i class="bi bi-list-ul"></i> View All Bookings
+              </a>
+              <a href="/admin/bookings/new" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-plus-circle"></i> New Booking
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body text-center">
+            <div class="mb-3">
+              <i class="bi bi-map text-success" style="font-size: 3rem;"></i>
+            </div>
+            <h5 class="card-title">Route Management</h5>
+            <p class="card-text text-muted">Create and manage transport routes, set origins and destinations</p>
+            <div class="d-grid gap-2">
+              <a href="/admin/routes" class="btn btn-success">
+                <i class="bi bi-list-ul"></i> View All Routes
+              </a>
+              <a href="/admin/routes/new" class="btn btn-outline-success btn-sm">
+                <i class="bi bi-plus-circle"></i> New Route
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body text-center">
+            <div class="mb-3">
+              <i class="bi bi-calendar-event text-warning" style="font-size: 3rem;"></i>
+            </div>
+            <h5 class="card-title">Schedule Management</h5>
+            <p class="card-text text-muted">Manage bus schedules, departure times, and journey dates</p>
+            <div class="d-grid gap-2">
+              <a href="/admin/schedules" class="btn btn-warning">
+                <i class="bi bi-list-ul"></i> View All Schedules
+              </a>
+              <a href="/admin/schedules/new" class="btn btn-outline-warning btn-sm">
+                <i class="bi bi-plus-circle"></i> New Schedule
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body text-center">
+            <div class="mb-3">
+              <i class="bi bi-people text-info" style="font-size: 3rem;"></i>
+            </div>
+            <h5 class="card-title">User Management</h5>
+            <p class="card-text text-muted">Manage customers and admin users, handle permissions</p>
+            <div class="d-grid gap-2">
+              <a href="/admin/users" class="btn btn-info">
+                <i class="bi bi-list-ul"></i> View All Users
+              </a>
+              <a href="/admin/users/new" class="btn btn-outline-info btn-sm">
+                <i class="bi bi-plus-circle"></i> New User
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Bookings Table -->
+    <div class="row">
+      <div class="col-lg-8 mb-4">
+        <div class="card">
+          <div class="card-header bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Bookings</h5>
+              <a href="/admin/bookings" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Booking ID</th>
+                    <th>Customer</th>
+                    <th>Route</th>
+                    <th>Seats</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (data.recentBookings && data.recentBookings.length > 0) { %>
+                    <% data.recentBookings.forEach(booking => { %>
+                      <tr>
+                        <td><code>#<%= booking._id.toString().slice(-6) %></code></td>
+                        <td>
+                          <div>
+                            <strong><%= booking.user ? booking.user.name : 'Unknown User' %></strong>
+                            <br><small class="text-muted"><%= booking.user ? booking.user.email : 'N/A' %></small>
+                          </div>
+                        </td>
+                        <td>
+                          <% if (booking.schedule && booking.schedule.route) { %>
+                            <strong><%= booking.schedule.route.routeNumber %></strong>
+                            <br><small class="text-muted"><%= booking.schedule.route.origin %> → <%= booking.schedule.route.destination %></small>
+                          <% } else { %>
+                            <span class="text-muted">Route not found</span>
+                          <% } %>
+                        </td>
+                        <td><span class="badge bg-info"><%= booking.seats %> seat(s)</span></td>
+                        <td>
+                          <% if (booking.status === 'confirmed') { %>
+                            <span class="badge bg-success status-badge">Confirmed</span>
+                          <% } else if (booking.status === 'cancelled') { %>
+                            <span class="badge bg-danger status-badge">Cancelled</span>
+                          <% } else { %>
+                            <span class="badge bg-secondary status-badge"><%= booking.status %></span>
+                          <% } %>
+                        </td>
+                        <td><small><%= new Date(booking.createdAt).toLocaleDateString() %></small></td>
+                        <td>
+                          <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary btn-sm" title="View Details">
+                              <i class="bi bi-eye"></i>
+                            </button>
+                            <% if (booking.status === 'confirmed') { %>
+                              <button class="btn btn-outline-danger btn-sm" title="Cancel Booking" 
+                                      onclick="cancelBooking('<%= booking._id %>')">
+                                <i class="bi bi-x-circle"></i>
+                              </button>
+                            <% } %>
+                          </div>
+                        </td>
+                      </tr>
+                    <% }); %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="7" class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox"></i> No recent bookings found
+                      </td>
+                    </tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="col-lg-4 mb-4">
+        <div class="card">
+          <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-6">
+                <a href="/admin/bookings/new" class="btn btn-primary w-100 text-start">
+                  <i class="bi bi-plus-circle"></i><br>
+                  <small>New Booking</small>
+                </a>
+              </div>
+              <div class="col-6">
+                <a href="/admin/routes/new" class="btn btn-success w-100 text-start">
+                  <i class="bi bi-map-fill"></i><br>
+                  <small>New Route</small>
+                </a>
+              </div>
+              <div class="col-6">
+                <a href="/admin/schedules/new" class="btn btn-warning w-100 text-start">
+                  <i class="bi bi-calendar-plus"></i><br>
+                  <small>New Schedule</small>
+                </a>
+              </div>
+              <div class="col-6">
+                <a href="/admin/users/new" class="btn btn-info w-100 text-start">
+                  <i class="bi bi-person-plus"></i><br>
+                  <small>New User</small>
+                </a>
+              </div>
+            </div>
+            <hr class="my-3">
+            <div class="d-grid gap-2">
+              <a href="/admin/reports" class="btn btn-outline-secondary">
+                <i class="bi bi-graph-up"></i> View Reports
+              </a>
+              <a href="/admin/settings" class="btn btn-outline-secondary">
+                <i class="bi bi-gear"></i> System Settings
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Route Summary -->
+        <div class="card mt-4">
+          <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="bi bi-map"></i> Routes Overview</h5>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <div class="d-flex justify-content-between">
+                <span>Total Routes:</span>
+                <strong><%= data.stats.totalRoutes %></strong>
+              </div>
+            </div>
+            <div class="mb-3">
+              <div class="d-flex justify-content-between">
+                <span>Total Schedules:</span>
+                <strong><%= data.stats.totalSchedules %></strong>
+              </div>
+            </div>
+            <% if (data.routes && data.routes.length > 0) { %>
+              <div class="mt-3">
+                <h6 class="text-muted">Active Routes:</h6>
+                <% data.routes.slice(0, 5).forEach(route => { %>
+                  <div class="d-flex justify-content-between align-items-center py-1">
+                    <small><%= route.routeNumber %></small>
+                    <span class="badge bg-light text-dark"><%= route.origin %> → <%= route.destination %></span>
+                  </div>
+                <% }); %>
+                <% if (data.routes.length > 5) { %>
+                  <small class="text-muted">... and <%= data.routes.length - 5 %> more</small>
+                <% } %>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cancel Booking Modal -->
+  <div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Cancel Booking</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          Are you sure you want to cancel this booking? This action cannot be undone.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-danger" id="confirmCancel">Cancel Booking</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let bookingToCancel = null;
+    
+    function cancelBooking(bookingId) {
+      bookingToCancel = bookingId;
+      new bootstrap.Modal(document.getElementById('cancelModal')).show();
+    }
+    
+    document.getElementById('confirmCancel').addEventListener('click', async function() {
+      if (bookingToCancel) {
+        try {
+          const response = await fetch(`/api/bookings/${bookingToCancel}/cancel`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            location.reload(); // Refresh the page to show updated data
+          } else {
+            alert('Failed to cancel booking. Please try again.');
+          }
+        } catch (error) {
+          alert('Error cancelling booking. Please try again.');
+        }
+        
+        bootstrap.Modal.getInstance(document.getElementById('cancelModal')).hide();
+      }
+    });
+  </script>
+</body>
+</html>

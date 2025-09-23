@@ -1,0 +1,419 @@
+const Booking = require('../models/Booking');
+const Schedule = require('../models/Schedule');
+const PassengerManifest = require('../models/PassengerManifest');
+
+class BookingController {
+    async createBooking(req, res) {
+        try {
+            console.log('Creating booking with data:', req.body);
+            
+            // Add user ID from URL params for web requests
+            if (req.params.userId) {
+                req.body.user = req.params.userId;
+            }
+            
+            // Set default status if not provided
+            if (!req.body.status) {
+                req.body.status = 'confirmed';
+            }
+
+            // Set seat count (default to 1 if not provided)
+            const seatCount = parseInt(req.body.passengers) || 1;
+            req.body.seats = seatCount;
+            
+            // Check if schedule has enough available seats
+            const schedule = await Schedule.findById(req.body.schedule);
+            if (!schedule) {
+                const errorMessage = 'Selected schedule not found';
+                if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                    return res.status(404).json({ message: errorMessage });
+                } else {
+                    return res.redirect(`/user/${req.params.userId}/bookings/new?error=${encodeURIComponent(errorMessage)}`);
+                }
+            }
+            
+            if (schedule.availableSeats < seatCount) {
+                const errorMessage = `Not enough seats available. Only ${schedule.availableSeats} seats left.`;
+                if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                    return res.status(400).json({ message: errorMessage });
+                } else {
+                    return res.redirect(`/user/${req.params.userId}/bookings/new?error=${encodeURIComponent(errorMessage)}`);
+                }
+            }
+
+            // Create the booking
+            const newBooking = new Booking(req.body);
+            await newBooking.save();
+            
+            // Update available seats in the schedule
+            await Schedule.findByIdAndUpdate(req.body.schedule, {
+                $inc: { availableSeats: -seatCount }
+            });
+            
+            // Generate/update passenger manifest for this schedule
+            try {
+                await PassengerManifest.generateForSchedule(req.body.schedule);
+                console.log(`Passenger manifest updated for schedule ${req.body.schedule}`);
+            } catch (manifestError) {
+                console.error('Error updating passenger manifest:', manifestError);
+                // Continue with booking confirmation even if manifest fails
+            }
+            
+            console.log(`Booking created successfully for ${seatCount} seats`);
+            
+            // Check if this is an API request or web request
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                res.status(201).json({ 
+                    message: "Booking created successfully", 
+                    data: newBooking 
+                });
+            } else {
+                // Redirect for web interface with success message
+                res.redirect(`/user/${req.params.userId}/bookings?success=Booking created successfully`);
+            }
+        } catch (error) {
+            console.error("Error creating booking:", error);
+            
+            let errorMessage = "Error creating booking";
+            if (error.name === 'ValidationError') {
+                const validationErrors = Object.values(error.errors).map(e => e.message);
+                errorMessage = "Validation error: " + validationErrors.join(", ");
+            }
+            
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                res.status(500).json({ 
+                    message: errorMessage, 
+                    error: error.message 
+                });
+            } else {
+                res.redirect(`/user/${req.params.userId}/bookings/new?error=${encodeURIComponent(errorMessage)}`);
+            }
+        }
+    }
+
+    async getAllBookings(req, res) {
+        try {
+            const bookings = await Booking.find().populate('user').populate('schedule');
+            res.status(200).json({ message: "Bookings retrieved successfully", data: bookings });
+        } catch (error) {
+            res.status(500).json({ message: "Error retrieving bookings", error: error.message });
+        }
+    }
+
+    async getBookingById(req, res) {
+        try {
+            const booking = await Booking.findById(req.params.id)
+                .populate('user', 'name email createdAt updatedAt')
+                .populate({
+                    path: 'schedule',
+                    populate: {
+                        path: 'route',
+                        select: 'routeNumber origin destination fare'
+                    }
+                });
+                
+            if (!booking) {
+                return res.status(404).json({ message: "Booking not found" });
+            }
+            
+            res.status(200).json({ 
+                message: "Booking retrieved successfully", 
+                data: booking 
+            });
+        } catch (error) {
+            console.error('Error retrieving booking:', error);
+            res.status(500).json({ 
+                message: "Error retrieving booking", 
+                error: error.message 
+            });
+        }
+    }
+
+    async updateBooking(req, res) {
+        try {
+            const updatedBooking = await Booking.findByIdAndUpdate(req.params.id, req.body, { new: true });
+            if (!updatedBooking) return res.status(404).json({ message: "Booking not found" });
+            res.status(200).json({ message: "Booking updated successfully", data: updatedBooking });
+        } catch (error) {
+            res.status(500).json({ message: "Error updating booking", error: error.message });
+        }
+    }
+
+    async deleteBooking(req, res) {
+        try {
+            const deletedBooking = await Booking.findByIdAndDelete(req.params.id);
+            if (!deletedBooking) return res.status(404).json({ message: "Booking not found" });
+            res.status(200).json({ message: "Booking deleted successfully" });
+        } catch (error) {
+            res.status(500).json({ message: "Error deleting booking", error: error.message });
+        }
+    }
+
+    // Get bookings by user ID for user dashboard
+    async getUserBookings(req, res) {
+        try {
+            const userId = req.params.userId;
+            const bookings = await Booking.find({ user: userId })
+                .populate('user', 'name email')
+                .populate({
+                    path: 'schedule',
+                    populate: {
+                        path: 'route',
+                        select: 'name origin destination price'
+                    }
+                })
+                .sort({ createdAt: -1 });
+            
+            res.status(200).json({ 
+                message: "User bookings retrieved successfully", 
+                data: bookings 
+            });
+        } catch (error) {
+            res.status(500).json({ 
+                message: "Error retrieving user bookings", 
+                error: error.message 
+            });
+        }
+    }
+
+    // Cancel a booking (change status to cancelled)
+    async cancelBooking(req, res) {
+        try {
+            const bookingId = req.params.id;
+            const updatedBooking = await Booking.findByIdAndUpdate(
+                bookingId, 
+                { status: 'cancelled' }, 
+                { new: true }
+            ).populate('user', 'name email')
+             .populate({
+                path: 'schedule',
+                populate: {
+                    path: 'route',
+                    select: 'name origin destination'
+                }
+            });
+            
+            if (!updatedBooking) {
+                return res.status(404).json({ message: "Booking not found" });
+            }
+            
+            res.status(200).json({ 
+                message: "Booking cancelled successfully", 
+                data: updatedBooking 
+            });
+        } catch (error) {
+            res.status(500).json({ 
+                message: "Error cancelling booking", 
+                error: error.message 
+            });
+        }
+    }
+
+    // Get booking statistics for admin dashboard
+    async getBookingStatistics(req, res) {
+        try {
+            const totalBookings = await Booking.countDocuments();
+            const confirmedBookings = await Booking.countDocuments({ status: 'confirmed' });
+            const cancelledBookings = await Booking.countDocuments({ status: 'cancelled' });
+            
+            // Get bookings by month for chart data
+            const monthlyStats = await Booking.aggregate([
+                {
+                    $group: {
+                        _id: {
+                            year: { $year: "$createdAt" },
+                            month: { $month: "$createdAt" }
+                        },
+                        count: { $sum: 1 },
+                        confirmed: { 
+                            $sum: { $cond: [{ $eq: ["$status", "confirmed"] }, 1, 0] } 
+                        },
+                        cancelled: { 
+                            $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] } 
+                        }
+                    }
+                },
+                { $sort: { "_id.year": 1, "_id.month": 1 } },
+                { $limit: 12 }
+            ]);
+
+            res.status(200).json({
+                message: "Booking statistics retrieved successfully",
+                data: {
+                    total: totalBookings,
+                    confirmed: confirmedBookings,
+                    cancelled: cancelledBookings,
+                    monthlyStats
+                }
+            });
+        } catch (error) {
+            res.status(500).json({ 
+                message: "Error retrieving booking statistics", 
+                error: error.message 
+            });
+        }
+    }
+
+    // Process payment and confirm booking
+    async confirmBooking(req, res) {
+        try {
+            const { userId } = req.params;
+            const { paymentMethod, cardNumber, expiryDate, cvv, nameOnCard, upiId, bankAccount } = req.body;
+            
+            // Get pending booking from session
+            const bookingData = req.session.pendingBooking;
+            
+            if (!bookingData) {
+                return res.redirect(`/user/${userId}/bookings/new?error=No booking data found. Please start again.`);
+            }
+            
+            console.log('Confirming booking with payment:', { paymentMethod, bookingData });
+            
+            // Verify schedule still has enough seats
+            const schedule = await Schedule.findById(bookingData.scheduleId);
+            if (!schedule || !schedule.isActive || schedule.availableSeats < bookingData.passengerCount) {
+                return res.redirect(`/user/${userId}/bookings/new?error=Selected schedule is no longer available`);
+            }
+            
+            // Generate booking ID
+            const bookingId = 'BK' + Date.now().toString(36).toUpperCase();
+            
+            // Create booking document
+            const newBooking = new Booking({
+                user: userId,
+                schedule: bookingData.scheduleId,
+                seats: bookingData.passengerCount,
+                status: 'confirmed',
+                bookingReference: bookingId,
+                passengers: bookingData.passengers,
+                contactPhone: bookingData.contactPhone,
+                totalPrice: bookingData.totalPrice,
+                paymentMethod: paymentMethod,
+                paymentStatus: 'completed'
+            });
+            
+            await newBooking.save();
+            
+            // Update available seats
+            await Schedule.findByIdAndUpdate(bookingData.scheduleId, {
+                $inc: { availableSeats: -bookingData.passengerCount }
+            });
+            
+            // Generate/update passenger manifest for this schedule
+            try {
+                await PassengerManifest.generateForSchedule(bookingData.scheduleId);
+                console.log(`Passenger manifest updated for schedule ${bookingData.scheduleId}`);
+            } catch (manifestError) {
+                console.error('Error updating passenger manifest:', manifestError);
+                // Continue with booking confirmation even if manifest fails
+            }
+            
+            // Clear pending booking from session
+            delete req.session.pendingBooking;
+            
+            console.log(`Booking confirmed successfully with ID: ${bookingId}`);
+            
+            // Check if API request
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                res.status(201).json({
+                    message: 'Booking confirmed successfully',
+                    data: {
+                        bookingId: bookingId,
+                        booking: newBooking
+                    }
+                });
+            } else {
+                // Redirect to success page or booking details
+                res.redirect(`/user/${userId}/bookings/${newBooking._id}/success`);
+            }
+            
+        } catch (error) {
+            console.error('Error confirming booking:', error);
+            
+            const errorMessage = 'Error processing payment and confirming booking';
+            
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                res.status(500).json({
+                    message: errorMessage,
+                    error: error.message
+                });
+            } else {
+                res.redirect(`/user/${req.params.userId}/bookings/payment?error=${encodeURIComponent(errorMessage)}`);
+            }
+        }
+    }
+
+    // Cancel booking and return seats
+    async cancelBookingWithSeats(req, res) {
+        try {
+            const { userId, id } = req.params;
+            
+            // Find the booking
+            const booking = await Booking.findOne({ _id: id, user: userId })
+                .populate('schedule');
+            
+            if (!booking) {
+                const errorMessage = 'Booking not found';
+                if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                    return res.status(404).json({ message: errorMessage });
+                } else {
+                    return res.redirect(`/user/${userId}/bookings?error=${encodeURIComponent(errorMessage)}`);
+                }
+            }
+            
+            if (booking.status === 'cancelled') {
+                const errorMessage = 'Booking is already cancelled';
+                if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                    return res.status(400).json({ message: errorMessage });
+                } else {
+                    return res.redirect(`/user/${userId}/bookings?error=${encodeURIComponent(errorMessage)}`);
+                }
+            }
+            
+            // Update booking status to cancelled
+            booking.status = 'cancelled';
+            await booking.save();
+            
+            // Return seats to schedule
+            await Schedule.findByIdAndUpdate(booking.schedule._id, {
+                $inc: { availableSeats: booking.seats }
+            });
+            
+            // Update passenger manifest for this schedule
+            try {
+                await PassengerManifest.generateForSchedule(booking.schedule._id);
+                console.log(`Passenger manifest updated after cancellation for schedule ${booking.schedule._id}`);
+            } catch (manifestError) {
+                console.error('Error updating passenger manifest after cancellation:', manifestError);
+                // Continue with cancellation even if manifest update fails
+            }
+            
+            console.log(`Booking ${id} cancelled successfully. ${booking.seats} seats returned to schedule.`);
+            
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                res.status(200).json({
+                    message: 'Booking cancelled successfully',
+                    data: booking
+                });
+            } else {
+                res.redirect(`/user/${userId}/bookings?success=Booking cancelled successfully. Seats have been made available for other passengers.`);
+            }
+            
+        } catch (error) {
+            console.error('Error cancelling booking:', error);
+            
+            const errorMessage = 'Error cancelling booking';
+            
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                res.status(500).json({
+                    message: errorMessage,
+                    error: error.message
+                });
+            } else {
+                res.redirect(`/user/${req.params.userId}/bookings?error=${encodeURIComponent(errorMessage)}`);
+            }
+        }
+    }
+}
+
+module.exports = new BookingController();

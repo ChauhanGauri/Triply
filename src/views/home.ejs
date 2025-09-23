@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || "Public Transport Management System" %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .hero-section {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      text-align: center;
+    }
+    
+    .hero-content {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 3rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      max-width: 600px;
+    }
+    
+    .hero-title {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .hero-subtitle {
+      font-size: 1.25rem;
+      margin-bottom: 2rem;
+      opacity: 0.9;
+    }
+    
+    .login-cards {
+      display: flex;
+      gap: 2rem;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+    
+    .login-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 15px;
+      padding: 2rem;
+      color: #333;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      flex: 1;
+      max-width: 250px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .login-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      text-decoration: none;
+      color: #333;
+    }
+    
+    .login-card-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+    
+    .admin-card .login-card-icon {
+      color: #dc3545;
+    }
+    
+    .user-card .login-card-icon {
+      color: #007bff;
+    }
+    
+    .login-card h3 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    
+    .login-card p {
+      margin-bottom: 0;
+      opacity: 0.7;
+    }
+    
+    .features {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 2rem;
+      margin-top: 2rem;
+    }
+    
+    .feature-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .feature-list li {
+      padding: 0.5rem 0;
+      display: flex;
+      align-items: center;
+    }
+    
+    .feature-list li i {
+      margin-right: 0.75rem;
+      color: #28a745;
+    }
+    
+    @media (max-width: 768px) {
+      .hero-title {
+        font-size: 2rem;
+      }
+      
+      .login-cards {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .login-card {
+        max-width: 300px;
+      }
+      
+      .hero-content {
+        margin: 1rem;
+        padding: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="hero-section">
+    <div class="hero-content">
+      <h1 class="hero-title">
+        <i class="bi bi-bus-front"></i><br>
+        Public Transport Management
+      </h1>
+      <p class="hero-subtitle">
+        Streamline your transportation system with our comprehensive management platform
+      </p>
+      
+      <div class="login-cards">
+        <a href="/auth/admin/login" class="login-card admin-card">
+          <i class="bi bi-shield-check login-card-icon"></i>
+          <h3>Admin Login</h3>
+          <p>Manage routes, schedules, and users</p>
+        </a>
+        
+        <a href="/auth/user/login" class="login-card user-card">
+          <i class="bi bi-person-circle login-card-icon"></i>
+          <h3>User Login</h3>
+          <p>Book tickets and manage travels</p>
+        </a>
+      </div>
+      
+      <div class="features">
+        <h4 class="mb-3"><i class="bi bi-star-fill"></i> System Features</h4>
+        <ul class="feature-list">
+          <li><i class="bi bi-check-circle-fill"></i> Route and Schedule Management</li>
+          <li><i class="bi bi-check-circle-fill"></i> Real-time Booking System</li>
+          <li><i class="bi bi-check-circle-fill"></i> User Dashboard and Analytics</li>
+          <li><i class="bi bi-check-circle-fill"></i> Admin Control Panel</li>
+          <li><i class="bi bi-check-circle-fill"></i> Booking History and Reports</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

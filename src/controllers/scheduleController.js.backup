@@ -1,0 +1,567 @@
+const Schedule = require('../models/Schedule');const Schedule = require('../models/Schedule');const Schedule = require('../models/Schedule');
+
+
+
+class ScheduleController {
+
+    async createSchedule(req, res) {
+
+        try {class ScheduleController {class ScheduleController {
+
+            console.log('Creating new schedule with data:', req.body);
+
+                async createSchedule(req, res) {    async createSchedule(req, res) {
+
+            // Handle checkbox boolean conversion
+
+            if (req.body.isActive === 'on') {        try {        try {
+
+                req.body.isActive = true;
+
+            } else if (!req.body.isActive) {            console.log('Creating new schedule with data:', req.body);            console.log('Creating new schedule with data:', req.body);
+
+                req.body.isActive = true; // Default to active for new schedules
+
+            }                        
+
+
+
+            const newSchedule = new Schedule(req.body);            // Handle checkbox boolean conversion            // Handle checkbox boolean conversion
+
+            await newSchedule.save();
+
+                        if (req.body.isActive === 'on') {            if (req.body.isActive === 'on') {
+
+            console.log('Schedule created successfully for route:', req.body.route);
+
+                            req.body.isActive = true;                req.body.isActive = true;
+
+            // Check if this is an API request or web request
+
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {            } else if (!req.body.isActive) {            } else if (!req.body.isActive) {
+
+                res.status(201).json({ 
+
+                    message: "Schedule created successfully",                 req.body.isActive = true; // Default to active for new schedules                req.body.isActive = true; // Default to active for new schedules
+
+                    data: newSchedule 
+
+                });            }            }
+
+            } else {
+
+                // Redirect for web interface with success message
+
+                res.redirect('/admin/schedules?success=Schedule created successfully');
+
+            }            const newSchedule = new Schedule(req.body);            const newSchedule = new Schedule(req.body);
+
+        } catch (error) {
+
+            console.error("Error creating schedule:", error);            await newSchedule.save();            await newSchedule.save();
+
+            console.error("Error details:", {
+
+                name: error.name,                        
+
+                message: error.message,
+
+                code: error.code,            console.log('Schedule created successfully for route:', req.body.route);            console.log('Schedule created successfully for route:', req.body.route);
+
+                errors: error.errors
+
+            });                        
+
+            
+
+            let errorMessage = "Error creating schedule";            // Check if this is an API request or web request            // Check if this is an API request or web request
+
+            
+
+            // Handle specific MongoDB errors            if (req.headers.accept && req.headers.accept.includes('application/json')) {            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+
+            if (error.code === 11000) {
+
+                errorMessage = "A schedule with this information already exists.";                res.status(201).json({                 res.status(201).json({ 
+
+            } else if (error.name === 'ValidationError') {
+
+                const validationErrors = Object.values(error.errors).map(e => e.message);                    message: "Schedule created successfully",                     message: "Schedule created successfully", 
+
+                errorMessage = "Validation error: " + validationErrors.join(', ');
+
+            } else if (error.name === 'CastError') {                    data: newSchedule                     data: newSchedule 
+
+                errorMessage = "Invalid route selected or data format error";
+
+            }                });                });
+
+            
+
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {            } else {            } else {
+
+                res.status(500).json({ 
+
+                    message: errorMessage,                 // Redirect for web interface with success message                // Redirect for web interface with success message
+
+                    error: error.message 
+
+                });                res.redirect('/admin/schedules?success=Schedule created successfully');                res.redirect('/admin/schedules?success=Schedule created successfully');
+
+            } else {
+
+                res.redirect(`/admin/schedules?error=${encodeURIComponent(errorMessage)}`);            }            }
+
+            }
+
+        }        } catch (error) {        } catch (error) {
+
+    }
+
+            console.error("Error creating schedule:", error);            console.error("Error creating schedule:", error);
+
+    async getAllSchedules(req, res) {
+
+        try {            console.error("Error details:", {            console.error("Error details:", {
+
+            const schedules = await Schedule.find().populate('route');
+
+            res.status(200).json({ message: "Schedules retrieved successfully", data: schedules });                name: error.name,                name: error.name,
+
+        } catch (error) {
+
+            res.status(500).json({ message: "Error retrieving schedules", error: error.message });                message: error.message,                message: error.message,
+
+        }
+
+    }                code: error.code,                code: error.code,
+
+
+
+    async getScheduleById(req, res) {                errors: error.errors                errors: error.errors
+
+        try {
+
+            const schedule = await Schedule.findById(req.params.id).populate('route');            });            });
+
+            if (!schedule) return res.status(404).json({ message: "Schedule not found" });
+
+            res.status(200).json({ message: "Schedule retrieved successfully", data: schedule });                        
+
+        } catch (error) {
+
+            res.status(500).json({ message: "Error retrieving schedule", error: error.message });            let errorMessage = "Error creating schedule";            let errorMessage = "Error creating schedule";
+
+        }
+
+    }                        
+
+
+
+    async updateSchedule(req, res) {            // Handle specific MongoDB errors            // Handle specific MongoDB errors
+
+        try {
+
+            const { id } = req.params;            if (error.code === 11000) {            if (error.code === 11000) {
+
+            console.log('Updating schedule with ID:', id);
+
+            console.log('Request body:', req.body);                errorMessage = "A schedule with this information already exists.";                errorMessage = "A schedule with this information already exists.";
+
+            
+
+            // Handle checkbox boolean conversion            } else if (error.name === 'ValidationError') {            } else if (error.name === 'ValidationError') {
+
+            if (req.body.isActive === 'on') {
+
+                req.body.isActive = true;                const validationErrors = Object.values(error.errors).map(e => e.message);                const validationErrors = Object.values(error.errors).map(e => e.message);
+
+            } else if (!req.body.isActive) {
+
+                req.body.isActive = false;                errorMessage = "Validation error: " + validationErrors.join(', ');                errorMessage = "Validation error: " + validationErrors.join(', ');
+
+            }
+
+            } else if (error.name === 'CastError') {            } else if (error.name === 'CastError') {
+
+            const updatedSchedule = await Schedule.findByIdAndUpdate(id, req.body, { 
+
+                new: true,                errorMessage = "Invalid route selected or data format error";                errorMessage = "Invalid route selected or data format error";
+
+                runValidators: true
+
+            });            }            }
+
+            
+
+            if (!updatedSchedule) {                        
+
+                if (req.headers.accept && req.headers.accept.includes('application/json')) {
+
+                    return res.status(404).json({ message: "Schedule not found" });            if (req.headers.accept && req.headers.accept.includes('application/json')) {            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+
+                } else {
+
+                    return res.redirect('/admin/schedules?error=Schedule not found');                res.status(500).json({                 res.status(500).json({ 
+
+                }
+
+            }                    message: errorMessage,                     message: errorMessage, 
+
+            
+
+            console.log('Schedule updated successfully');                    error: error.message                     error: error.message 
+
+            
+
+            // Check if this is an API request or web request                });                });
+
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+
+                res.status(200).json({             } else {            } else {
+
+                    message: "Schedule updated successfully", 
+
+                    data: updatedSchedule                 res.redirect(`/admin/schedules?error=${encodeURIComponent(errorMessage)}`);                res.redirect(`/admin/schedules?error=${encodeURIComponent(errorMessage)}`);
+
+                });
+
+            } else {            }            }
+
+                // Redirect for web interface with success message
+
+                res.redirect('/admin/schedules?success=Schedule updated successfully');        }        }
+
+            }
+
+        } catch (error) {    }    }
+
+            console.error("Error updating schedule:", error);
+
+            console.error("Error details:", {
+
+                name: error.name,
+
+                message: error.message,    async getAllSchedules(req, res) {    async getAllSchedules(req, res) {
+
+                code: error.code,
+
+                errors: error.errors        try {        try {
+
+            });
+
+                        const schedules = await Schedule.find().populate('route');            const schedules = await Schedule.find().populate('route');
+
+            let errorMessage = "Error updating schedule";
+
+                        res.status(200).json({ message: "Schedules retrieved successfully", data: schedules });            res.status(200).json({ message: "Schedules retrieved successfully", data: schedules });
+
+            // Handle specific MongoDB errors
+
+            if (error.code === 11000) {        } catch (error) {        } catch (error) {
+
+                errorMessage = "A schedule with this information already exists.";
+
+            } else if (error.name === 'ValidationError') {            res.status(500).json({ message: "Error retrieving schedules", error: error.message });            res.status(500).json({ message: "Error retrieving schedules", error: error.message });
+
+                const validationErrors = Object.values(error.errors).map(e => e.message);
+
+                errorMessage = "Validation error: " + validationErrors.join(', ');        }        }
+
+            } else if (error.name === 'CastError') {
+
+                errorMessage = "Invalid schedule ID or data format error";    }    }
+
+            }
+
+            
+
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+
+                res.status(500).json({     async getScheduleById(req, res) {    async getScheduleById(req, res) {
+
+                    message: errorMessage, 
+
+                    error: error.message         try {        try {
+
+                });
+
+            } else {            const schedule = await Schedule.findById(req.params.id).populate('route');            const schedule = await Schedule.findById(req.params.id).populate('route');
+
+                res.redirect(`/admin/schedules?error=${encodeURIComponent(errorMessage)}`);
+
+            }            if (!schedule) return res.status(404).json({ message: "Schedule not found" });            if (!schedule) return res.status(404).json({ message: "Schedule not found" });
+
+        }
+
+    }            res.status(200).json({ message: "Schedule retrieved successfully", data: schedule });            res.status(200).json({ message: "Schedule retrieved successfully", data: schedule });
+
+
+
+    async deleteSchedule(req, res) {        } catch (error) {        } catch (error) {
+
+        try {
+
+            const deletedSchedule = await Schedule.findByIdAndDelete(req.params.id);            res.status(500).json({ message: "Error retrieving schedule", error: error.message });            res.status(500).json({ message: "Error retrieving schedule", error: error.message });
+
+            if (!deletedSchedule) {
+
+                if (req.headers.accept && req.headers.accept.includes('application/json')) {        }        }
+
+                    return res.status(404).json({ message: "Schedule not found" });
+
+                } else {    }    }
+
+                    return res.redirect('/admin/schedules?error=Schedule not found');
+
+                }
+
+            }
+
+                async updateSchedule(req, res) {    async updateSchedule(req, res) {
+
+            // Check if this is an API request or web request
+
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {        try {        try {
+
+                res.status(200).json({ message: "Schedule deleted successfully" });
+
+            } else {            const { id } = req.params;            const { id } = req.params;
+
+                // Redirect for web interface with success message
+
+                res.redirect('/admin/schedules?success=Schedule deleted successfully');            console.log('Updating schedule with ID:', id);            console.log('Updating schedule with ID:', id);
+
+            }
+
+        } catch (error) {            console.log('Request body:', req.body);            console.log('Request body:', req.body);
+
+            console.error("Error deleting schedule:", error);
+
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {                        
+
+                res.status(500).json({ 
+
+                    message: "Error deleting schedule",             // Handle checkbox boolean conversion            // Handle checkbox boolean conversion
+
+                    error: error.message 
+
+                });            if (req.body.isActive === 'on') {            if (req.body.isActive === 'on') {
+
+            } else {
+
+                res.redirect('/admin/schedules?error=Error deleting schedule');                req.body.isActive = true;                req.body.isActive = true;
+
+            }
+
+        }            } else if (!req.body.isActive) {            } else if (!req.body.isActive) {
+
+    }
+
+}                req.body.isActive = false;                req.body.isActive = false;
+
+
+
+module.exports = new ScheduleController();            }            }
+
+
+
+            const updatedSchedule = await Schedule.findByIdAndUpdate(id, req.body, {             const updatedSchedule = await Schedule.findByIdAndUpdate(id, req.body, { 
+
+                new: true,                new: true,
+
+                runValidators: true                runValidators: true
+
+            });            });
+
+                        
+
+            if (!updatedSchedule) {            if (!updatedSchedule) {
+
+                if (req.headers.accept && req.headers.accept.includes('application/json')) {                if (req.headers.accept && req.headers.accept.includes('application/json')) {
+
+                    return res.status(404).json({ message: "Schedule not found" });                    return res.status(404).json({ message: "Schedule not found" });
+
+                } else {                } else {
+
+                    return res.redirect('/admin/schedules?error=Schedule not found');                    return res.redirect('/admin/schedules?error=Schedule not found');
+
+                }                }
+
+            }            }
+
+                        
+
+            console.log('Schedule updated successfully');            console.log('Schedule updated successfully');
+
+                        
+
+            // Check if this is an API request or web request            // Check if this is an API request or web request
+
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+
+                res.status(200).json({                 res.status(200).json({ 
+
+                    message: "Schedule updated successfully",                     message: "Schedule updated successfully", 
+
+                    data: updatedSchedule                     data: updatedSchedule 
+
+                });                });
+
+            } else {            } else {
+
+                // Redirect for web interface with success message                // Redirect for web interface with success message
+
+                res.redirect('/admin/schedules?success=Schedule updated successfully');                res.redirect('/admin/schedules?success=Schedule updated successfully');
+
+            }            }
+
+        } catch (error) {        } catch (error) {
+
+            console.error("Error updating schedule:", error);            console.error("Error updating schedule:", error);
+
+            console.error("Error details:", {            console.error("Error details:", {
+
+                name: error.name,                name: error.name,
+
+                message: error.message,                message: error.message,
+
+                code: error.code,                code: error.code,
+
+                errors: error.errors                errors: error.errors
+
+            });            });
+
+                        
+
+            let errorMessage = "Error updating schedule";            let errorMessage = "Error updating schedule";
+
+                        
+
+            // Handle specific MongoDB errors            // Handle specific MongoDB errors
+
+            if (error.code === 11000) {            if (error.code === 11000) {
+
+                errorMessage = "A schedule with this information already exists.";                errorMessage = "A schedule with this information already exists.";
+
+            } else if (error.name === 'ValidationError') {            } else if (error.name === 'ValidationError') {
+
+                const validationErrors = Object.values(error.errors).map(e => e.message);                const validationErrors = Object.values(error.errors).map(e => e.message);
+
+                errorMessage = "Validation error: " + validationErrors.join(', ');                errorMessage = "Validation error: " + validationErrors.join(', ');
+
+            } else if (error.name === 'CastError') {            } else if (error.name === 'CastError') {
+
+                errorMessage = "Invalid schedule ID or data format error";                errorMessage = "Invalid schedule ID or data format error";
+
+            }            }
+
+                        
+
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+
+                res.status(500).json({                 res.status(500).json({ 
+
+                    message: errorMessage,                     message: errorMessage, 
+
+                    error: error.message                     error: error.message 
+
+                });                });
+
+            } else {            } else {
+
+                res.redirect(`/admin/schedules?error=${encodeURIComponent(errorMessage)}`);                res.redirect(`/admin/schedules?error=${encodeURIComponent(errorMessage)}`);
+
+            }            }
+
+        }        }
+
+    }    }
+
+                res.status(200).json({ 
+
+    async deleteSchedule(req, res) {                    message: "Schedule updated successfully", 
+
+        try {                    data: updatedSchedule 
+
+            const deletedSchedule = await Schedule.findByIdAndDelete(req.params.id);                });
+
+            if (!deletedSchedule) {            } else {
+
+                if (req.headers.accept && req.headers.accept.includes('application/json')) {                // Redirect for web interface
+
+                    return res.status(404).json({ message: "Schedule not found" });                res.redirect('/admin/schedules');
+
+                } else {            }
+
+                    return res.redirect('/admin/schedules?error=Schedule not found');        } catch (error) {
+
+                }            console.error("Error updating schedule:", error);
+
+            }            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+
+                            res.status(500).json({ 
+
+            // Check if this is an API request or web request                    message: "Error updating schedule", 
+
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {                    error: error.message 
+
+                res.status(200).json({ message: "Schedule deleted successfully" });                });
+
+            } else {            } else {
+
+                // Redirect for web interface with success message                res.redirect('/admin/schedules?error=Error updating schedule');
+
+                res.redirect('/admin/schedules?success=Schedule deleted successfully');            }
+
+            }        }
+
+        } catch (error) {    }
+
+            console.error("Error deleting schedule:", error);
+
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {    async deleteSchedule(req, res) {
+
+                res.status(500).json({         try {
+
+                    message: "Error deleting schedule",             const deletedSchedule = await Schedule.findByIdAndDelete(req.params.id);
+
+                    error: error.message             if (!deletedSchedule) {
+
+                });                if (req.headers.accept && req.headers.accept.includes('application/json')) {
+
+            } else {                    return res.status(404).json({ message: "Schedule not found" });
+
+                res.redirect('/admin/schedules?error=Error deleting schedule');                } else {
+
+            }                    return res.redirect('/admin/schedules?error=Schedule not found');
+
+        }                }
+
+    }            }
+
+}            
+
+            // Check if this is an API request or web request
+
+module.exports = new ScheduleController();            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                res.status(200).json({ message: "Schedule deleted successfully" });
+            } else {
+                // Redirect for web interface
+                res.redirect('/admin/schedules');
+            }
+        } catch (error) {
+            console.error("Error deleting schedule:", error);
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                res.status(500).json({ 
+                    message: "Error deleting schedule", 
+                    error: error.message 
+                });
+            } else {
+                res.redirect('/admin/schedules?error=Error deleting schedule');
+            }
+        }
+    }
+}
+
+module.exports = new ScheduleController();

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || "Manage Routes" %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+<body class="bg-light">
+
+  <!-- Header -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href="/admin/dashboard">
+        <i class="bi bi-bus-front"></i> Transport Admin
+      </a>
+      <div class="navbar-nav ms-auto">
+        <a class="nav-link" href="/admin/dashboard">Dashboard</a>
+        <a class="nav-link active" href="/admin/routes">Routes</a>
+        <a class="nav-link" href="/admin/schedules">Schedules</a>
+        <a class="nav-link" href="/admin/users">Users</a>
+        <a class="nav-link" href="/auth/logout">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <div class="row">
+      <div class="col-12">
+        <!-- Error/Success Messages -->
+        <% if (typeof error !== 'undefined' && error) { %>
+          <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <%= error %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        <% } %>
+        <% if (typeof success !== 'undefined' && success) { %>
+          <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <%= success %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        <% } %>
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2><i class="bi bi-geo-alt"></i> Manage Routes</h2>
+          <a href="/admin/routes/new" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Add New Route
+          </a>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Route Number</th>
+                    <th>Origin</th>
+                    <th>Destination</th>
+                    <th>Distance</th>
+                    <th>Duration</th>
+                    <th>Fare</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (routes && routes.length > 0) { %>
+                    <% routes.forEach(route => { %>
+                      <tr>
+                        <td><strong><%= route.routeNumber %></strong></td>
+                        <td><%= route.origin %></td>
+                        <td><%= route.destination %></td>
+                        <td><%= route.distance ? route.distance + ' km' : 'N/A' %></td>
+                        <td><%= route.duration ? route.duration + ' mins' : 'N/A' %></td>
+                        <td><%= route.fare ? '₹' + route.fare : 'N/A' %></td>
+                        <td>
+                          <span class="badge bg-<%= route.isActive ? 'success' : 'secondary' %>">
+                            <%= route.isActive ? 'Active' : 'Inactive' %>
+                          </span>
+                        </td>
+                        <td>
+                          <div class="btn-group" role="group">
+                            <a href="/admin/routes/<%= route._id %>/edit" class="btn btn-sm btn-outline-primary">
+                              <i class="bi bi-pencil"></i>
+                            </a>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteRoute('<%= route._id %>')">
+                              <i class="bi bi-trash"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="8" class="text-center py-4">
+                        <div class="text-muted">
+                          <i class="bi bi-geo-alt fs-1"></i>
+                          <p class="mt-2">No routes found. <a href="/admin/routes/new">Add your first route</a>.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function deleteRoute(routeId) {
+      if (confirm('Are you sure you want to delete this route? This will also affect related schedules.')) {
+        fetch(`/admin/routes/${routeId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.message) {
+            alert(data.message);
+            location.reload();
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Error deleting route');
+        });
+      }
+    }
+  </script>
+</body>
+</html>

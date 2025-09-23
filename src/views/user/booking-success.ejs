@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - Public Transport</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/css/dashboard.css" rel="stylesheet">
+    <style>
+        .success-animation {
+            animation: bounceIn 0.6s ease-out;
+        }
+        
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .success-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+        }
+        
+        .booking-details-card {
+            border: 2px solid #28a745;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        }
+        
+        .detail-row {
+            border-bottom: 1px solid #dee2e6;
+            padding: 15px 0;
+        }
+        
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        
+        .booking-id {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #28a745;
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #e7f7e7, #d4edda);
+            border-radius: 10px;
+            border: 2px dashed #28a745;
+        }
+        
+        .action-buttons .btn {
+            min-width: 180px;
+            padding: 12px 24px;
+            font-weight: 600;
+            border-radius: 25px;
+        }
+        
+        .passenger-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/header') %>
+    
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <!-- Success Header -->
+                <div class="text-center mb-4 success-animation">
+                    <div class="success-icon rounded-circle">
+                        <i class="bi bi-check-lg" style="font-size: 3rem;"></i>
+                    </div>
+                    <h1 class="text-success mb-3">Booking Confirmed!</h1>
+                    <p class="lead text-muted">Your seats have been successfully reserved</p>
+                </div>
+                
+                <!-- Booking ID Display -->
+                <div class="booking-id">
+                    <div class="small text-muted">Your Booking ID</div>
+                    <div><%= booking.bookingReference %></div>
+                </div>
+                
+                <!-- Booking Details Card -->
+                <div class="card booking-details-card shadow-sm mb-4">
+                    <div class="card-header bg-success text-white text-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-ticket-perforated me-2"></i>
+                            Booking Details
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Route Information -->
+                        <div class="detail-row">
+                            <div class="row">
+                                <div class="col-4">
+                                    <strong class="text-muted">Route:</strong>
+                                </div>
+                                <div class="col-8">
+                                    <span class="badge bg-primary me-2"><%= booking.schedule.route.routeNumber %></span>
+                                    <%= booking.schedule.route.origin %> → <%= booking.schedule.route.destination %>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Journey Details -->
+                        <div class="detail-row">
+                            <div class="row">
+                                <div class="col-4">
+                                    <strong class="text-muted">Journey Date:</strong>
+                                </div>
+                                <div class="col-8">
+                                    <i class="bi bi-calendar3 me-2"></i>
+                                    <%= new Date(booking.schedule.journeyDate).toLocaleDateString('en-US', { 
+                                        weekday: 'long', 
+                                        year: 'numeric', 
+                                        month: 'long', 
+                                        day: 'numeric' 
+                                    }) %>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Time Details -->
+                        <div class="detail-row">
+                            <div class="row">
+                                <div class="col-4">
+                                    <strong class="text-muted">Departure:</strong>
+                                </div>
+                                <div class="col-8">
+                                    <i class="bi bi-clock me-2"></i>
+                                    <%= booking.schedule.departureTime %>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="row">
+                                <div class="col-4">
+                                    <strong class="text-muted">Arrival:</strong>
+                                </div>
+                                <div class="col-8">
+                                    <i class="bi bi-clock me-2"></i>
+                                    <%= booking.schedule.arrivalTime %>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Bus Details -->
+                        <% if (booking.schedule.busNumber) { %>
+                        <div class="detail-row">
+                            <div class="row">
+                                <div class="col-4">
+                                    <strong class="text-muted">Bus Number:</strong>
+                                </div>
+                                <div class="col-8">
+                                    <i class="bi bi-bus-front me-2"></i>
+                                    <%= booking.schedule.busNumber %>
+                                </div>
+                            </div>
+                        </div>
+                        <% } %>
+                        
+                        <% if (booking.schedule.driverName) { %>
+                        <div class="detail-row">
+                            <div class="row">
+                                <div class="col-4">
+                                    <strong class="text-muted">Driver:</strong>
+                                </div>
+                                <div class="col-8">
+                                    <i class="bi bi-person-circle me-2"></i>
+                                    <%= booking.schedule.driverName %>
+                                </div>
+                            </div>
+                        </div>
+                        <% } %>
+                        
+                        <!-- Passenger Information -->
+                        <div class="detail-row">
+                            <div class="row">
+                                <div class="col-4">
+                                    <strong class="text-muted">Passengers:</strong>
+                                </div>
+                                <div class="col-8">
+                                    <div class="badge bg-info mb-2">
+                                        <i class="bi bi-people me-1"></i>
+                                        <%= booking.seats %> <%= booking.seats === 1 ? 'Passenger' : 'Passengers' %>
+                                    </div>
+                                    <% if (booking.passengers && booking.passengers.length > 0) { %>
+                                        <% booking.passengers.forEach((passenger, index) => { %>
+                                            <div class="passenger-card">
+                                                <div class="row align-items-center">
+                                                    <div class="col-md-6">
+                                                        <strong><%= passenger.name %></strong>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <small class="text-muted">Age: <%= passenger.age %></small>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <span class="badge bg-light text-dark">
+                                                            <%= passenger.gender %>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <% }) %>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Contact Information -->
+                        <% if (booking.contactPhone) { %>
+                        <div class="detail-row">
+                            <div class="row">
+                                <div class="col-4">
+                                    <strong class="text-muted">Contact:</strong>
+                                </div>
+                                <div class="col-8">
+                                    <i class="bi bi-telephone me-2"></i>
+                                    <%= booking.contactPhone %>
+                                </div>
+                            </div>
+                        </div>
+                        <% } %>
+                        
+                        <!-- Payment Information -->
+                        <div class="detail-row">
+                            <div class="row">
+                                <div class="col-4">
+                                    <strong class="text-muted">Amount Paid:</strong>
+                                </div>
+                                <div class="col-8">
+                                    <h5 class="text-success mb-0">
+                                        <i class="bi bi-currency-rupee"></i><%= booking.totalPrice?.toFixed(2) || '0.00' %>
+                                    </h5>
+                                    <small class="text-muted">
+                                        Payment via <%= booking.paymentMethod?.toUpperCase() || 'N/A' %> 
+                                        <span class="badge bg-success ms-2">PAID</span>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="d-grid gap-3 action-buttons">
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <a href="/user/<%= user.id %>/bookings" class="btn btn-primary w-100">
+                                <i class="bi bi-list-ul me-2"></i>
+                                View All Bookings
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <a href="/user/<%= user.id %>/bookings/new" class="btn btn-success w-100">
+                                <i class="bi bi-plus-circle me-2"></i>
+                                Book Another Trip
+                            </a>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <button onclick="window.print()" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-printer me-2"></i>
+                                Print Ticket
+                            </button>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <a href="/user/<%= user.id %>/dashboard" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-speedometer2 me-2"></i>
+                                Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Important Information -->
+                <div class="alert alert-info mt-4">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Important Information
+                    </h6>
+                    <ul class="mb-0">
+                        <li>Please arrive at the boarding point at least 15 minutes before departure time</li>
+                        <li>Keep your booking ID ready for verification</li>
+                        <li>Carry a valid ID proof during travel</li>
+                        <li>Cancellation requests must be made at least 2 hours before departure</li>
+                    </ul>
+                </div>
+                
+                <!-- Support Contact -->
+                <div class="text-center mt-4 mb-5">
+                    <p class="text-muted">
+                        Need help? Contact us at 
+                        <a href="tel:+1234567890" class="text-decoration-none">
+                            <i class="bi bi-telephone"></i> +1 (234) 567-890
+                        </a>
+                        or 
+                        <a href="mailto:support@transport.com" class="text-decoration-none">
+                            <i class="bi bi-envelope"></i> support@transport.com
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Auto-scroll to top on page load
+        window.scrollTo(0, 0);
+        
+        // Show success message if available
+        <% if (typeof success !== 'undefined' && success) { %>
+            // Could add additional success animations here
+            console.log('Booking confirmed successfully!');
+        <% } %>
+        
+        // Print function optimization
+        window.addEventListener('beforeprint', function() {
+            document.body.classList.add('printing');
+        });
+        
+        window.addEventListener('afterprint', function() {
+            document.body.classList.remove('printing');
+        });
+        
+        // Add print styles
+        const printStyles = `
+            @media print {
+                .btn, .alert-info, nav, .action-buttons { display: none !important; }
+                .container { max-width: none !important; }
+                .booking-details-card { border: 2px solid #000 !important; }
+            }
+        `;
+        
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = printStyles;
+        document.head.appendChild(styleSheet);
+    </script>
+</body>
+</html>

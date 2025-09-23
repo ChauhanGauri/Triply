@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || "Manage Schedules" %></title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+<body class="bg-light">
+
+  <!-- Header -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href="/admin/dashboard">
+        <i class="bi bi-bus-front"></i> Transport Admin
+      </a>
+      <div class="navbar-nav ms-auto">
+        <a class="nav-link" href="/admin/dashboard">Dashboard</a>
+        <a class="nav-link" href="/admin/routes">Routes</a>
+        <a class="nav-link active" href="/admin/schedules">Schedules</a>
+        <a class="nav-link" href="/admin/manifests">Manifests</a>
+        <a class="nav-link" href="/admin/users">Users</a>
+        <a class="nav-link" href="/auth/logout">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <div class="row">
+      <div class="col-12">
+        <!-- Error/Success Messages -->
+        <% if (typeof error !== 'undefined' && error) { %>
+          <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <%= error %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        <% } %>
+        <% if (typeof success !== 'undefined' && success) { %>
+          <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <%= success %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        <% } %>
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2><i class="bi bi-calendar-event"></i> Manage Schedules</h2>
+          <a href="/admin/schedules/new" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Add New Schedule
+          </a>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Route</th>
+                    <th>Journey Date</th>
+                    <th>Bus Number</th>
+                    <th>Driver</th>
+                    <th>Departure</th>
+                    <th>Arrival</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% if (schedules && schedules.length > 0) { %>
+                    <% schedules.forEach(schedule => { %>
+                      <tr>
+                        <td>
+                          <% if (schedule.route) { %>
+                            <strong><%= schedule.route.routeNumber %></strong><br>
+                            <small class="text-muted"><%= schedule.route.origin %> → <%= schedule.route.destination %></small>
+                          <% } else { %>
+                            <em class="text-muted">Route not found</em><br>
+                            <small class="text-warning">⚠️ Invalid route reference</small>
+                          <% } %>
+                        </td>
+                        <td>
+                          <i class="bi bi-calendar3"></i> <%= schedule.journeyDate ? new Date(schedule.journeyDate).toLocaleDateString() : '<em class="text-muted">Not set</em>' %>
+                        </td>
+                        <td>
+                          <strong><%= schedule.busNumber %></strong>
+                        </td>
+                        <td>
+                          <%= schedule.driverName || '<em class="text-muted">Not assigned</em>' %>
+                        </td>
+                        <td>
+                          <i class="bi bi-clock"></i> <%= schedule.departureTime %>
+                        </td>
+                        <td>
+                          <i class="bi bi-clock-fill"></i> <%= schedule.arrivalTime %>
+                        </td>
+                        <td>
+                          <div class="btn-group" role="group">
+                            <a href="/admin/schedules/<%= schedule._id %>/manifest" class="btn btn-sm btn-outline-info" title="View Passenger Manifest">
+                              <i class="bi bi-people"></i>
+                            </a>
+                            <a href="/admin/schedules/<%= schedule._id %>/edit" class="btn btn-sm btn-outline-primary" title="Edit Schedule">
+                              <i class="bi bi-pencil"></i>
+                            </a>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteSchedule('<%= schedule._id %>')" title="Delete Schedule">
+                              <i class="bi bi-trash"></i>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="7" class="text-center py-4">
+                        <div class="text-muted">
+                          <i class="bi bi-calendar-event fs-1"></i>
+                          <p class="mt-2">No schedules found. <a href="/admin/schedules/new">Add your first schedule</a>.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  <% } %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    function deleteSchedule(scheduleId) {
+      if (confirm('Are you sure you want to delete this schedule? This will also cancel related bookings.')) {
+        fetch(`/admin/schedules/${scheduleId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.message) {
+            alert(data.message);
+            location.reload();
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Error deleting schedule');
+        });
+      }
+    }
+  </script>
+</body>
+</html>
