@@ -7,48 +7,280 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
   <style>
-    .stat-card {
-      border-left: 4px solid #007bff;
-      transition: transform 0.2s;
+    /* Global overflow prevention */
+    html, body {
+      overflow-x: hidden !important;
+      width: 100%;
     }
-    .stat-card:hover {
-      transform: translateY(-2px);
+
+    .container-fluid {
+      overflow-x: hidden;
+      width: 100%;
     }
-    .stat-card.confirmed {
-      border-left-color: #28a745;
+    body {
+      background: #1E293B;
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #1E293B;
     }
-    .stat-card.cancelled {
-      border-left-color: #dc3545;
+
+    .dashboard-container {
+      background: #FFFFFF;
+      min-height: 100vh;
+      border-radius: 20px 0 0 20px;
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+      animation: slideIn 0.8s ease-out;
     }
-    .stat-card.upcoming {
-      border-left-color: #17a2b8;
-    }
+
     .user-header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: #1E293B;
       color: white;
       padding: 2rem 0;
-      margin-bottom: 2rem;
+      border-radius: 20px 0 0 0;
     }
-    .booking-card {
-      transition: transform 0.2s, box-shadow 0.2s;
+
+    .user-title {
+      background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 700;
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
     }
-    .booking-card:hover {
+
+    .btn-custom {
+      background: linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
+      border: none;
+      border-radius: 10px;
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+      color: white;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-custom:hover {
+      background: linear-gradient(135deg, #DB2777 0%, #D97706 100%);
       transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      box-shadow: 0 6px 20px rgba(236, 72, 153, 0.3);
+      color: white;
+      text-decoration: none;
     }
+
+    .btn-outline-custom {
+      background: transparent;
+      border: 2px solid #EC4899;
+      color: #EC4899;
+      border-radius: 10px;
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-outline-custom:hover {
+      background: #EC4899;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(236, 72, 153, 0.3);
+      text-decoration: none;
+    }
+
+    .stat-card {
+      background: #FFFFFF;
+      border: 2px solid #F1F5F9;
+      border-radius: 16px;
+      padding: 1.25rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(30, 41, 59, 0.08);
+      position: relative;
+      overflow: visible;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
+      transition: width 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 25px rgba(30, 41, 59, 0.12);
+      border-color: #EC4899;
+    }
+
+    .stat-card:hover::before {
+      width: 6px;
+    }
+
+    .stat-icon {
+      width: 45px;
+      height: 45px;
+      background: linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1E293B;
+      margin-bottom: 0.125rem;
+    }
+
+    .stat-label {
+      color: #64748B;
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .section-card {
+      background: #FFFFFF;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 12px rgba(30, 41, 59, 0.08);
+      border: 1px solid #F1F5F9;
+    }
+
+    .section-title {
+      color: #1E293B;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      font-size: 1.1rem;
+    }
+
+    .table {
+      background: #FFFFFF;
+      border-radius: 12px;
+      overflow: visible;
+      box-shadow: 0 4px 12px rgba(30, 41, 59, 0.08);
+    }
+
+    .table thead th {
+      background: #F8FAFC;
+      border-bottom: 2px solid #E2E8F0;
+      color: #1E293B;
+      font-weight: 600;
+      padding: 0.75rem;
+    }
+
+    .table tbody td {
+      padding: 0.75rem;
+      border-bottom: 1px solid #F1F5F9;
+      color: #475569;
+    }
+
+    .table-hover tbody tr:hover {
+      background-color: #FEF3C7;
+    }
+
+    /* Table column widths for responsive layout */
+    .table th:nth-child(1), .table td:nth-child(1) { width: 12%; } /* Booking ID */
+    .table th:nth-child(2), .table td:nth-child(2) { width: 30%; } /* Route */
+    .table th:nth-child(3), .table td:nth-child(3) { width: 12%; } /* Seats */
+    .table th:nth-child(4), .table td:nth-child(4) { width: 15%; } /* Status */
+    .table th:nth-child(5), .table td:nth-child(5) { width: 15%; } /* Date */
+    .table th:nth-child(6), .table td:nth-child(6) { width: 16%; } /* Actions */
+
+    .table-container {
+      overflow-x: hidden;
+      width: 100%;
+    }
+
+    .table-container table {
+      min-width: 100%;
+      table-layout: fixed;
+      width: 100%;
+    }
+
+    .status-badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-confirmed {
+      background: #D1FAE5;
+      color: #065F46;
+    }
+
+    .status-pending {
+      background: #FED7AA;
+      color: #9A3412;
+    }
+
+    .status-cancelled {
+      background: #FEE2E2;
+      color: #991B1B;
+    }
+
+    .booking-card {
+      background: #FFFFFF;
+      border-radius: 16px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(30, 41, 59, 0.08);
+      border: 1px solid #F1F5F9;
+    }
+
+    .booking-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 25px rgba(30, 41, 59, 0.15);
+    }
+
     .status-badge {
       font-size: 0.8em;
       padding: 0.4em 0.8em;
+      border-radius: 20px;
+      font-weight: 600;
     }
+
     .route-info {
-      background: linear-gradient(45deg, #f8f9fa, #e9ecef);
-      border-radius: 0.5rem;
+      background: linear-gradient(135deg, #F8FAFC 0%, #FFFFFF 100%);
+      border-radius: 12px;
       padding: 1rem;
+      border: 1px solid #E2E8F0;
     }
+
     .upcoming-badge {
-      background: linear-gradient(45deg, #28a745, #20c997);
+      background: linear-gradient(45deg, #10B981, #EC4899);
       color: white;
       border: none;
+      border-radius: 20px;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
     }
   </style>
 </head>
@@ -59,95 +291,73 @@
     <div class="container">
       <div class="row align-items-center">
         <div class="col">
-          <h1 class="mb-1"><i class="bi bi-person-circle"></i> Welcome, <%= data.user.name %>!</h1>
-          <p class="mb-0">Manage your transportation bookings</p>
+          <a href="/user/<%= data.user.id %>/dashboard" class="text-decoration-none">
+            <h1 class="user-title mb-1">
+              <i class="bi bi-bus-front me-3"></i>
+              Triply
+            </h1>
+          </a>
+          <p class="mb-0 opacity-75"><%= data.user.name %></p>
         </div>
         <div class="col-auto">
-          <a href="/user/<%= data.user.id %>/bookings/new" class="btn btn-light me-2">
+          <a href="/user/<%= data.user.id %>/bookings/new" class="btn-custom me-2">
             <i class="bi bi-plus-circle"></i> New Booking
           </a>
-          <a href="/api/bookings/user/<%= data.user.id || 'me' %>" class="btn btn-outline-light">
-            <i class="bi bi-download"></i> Export
+          <a href="/auth/logout" class="btn-outline-custom">
+            <i class="bi bi-box-arrow-right"></i> Logout
           </a>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="container">
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-      <div class="col-md-3 mb-3">
-        <div class="card stat-card h-100">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h6 class="card-subtitle mb-2 text-muted">Total Bookings</h6>
-                <h2 class="card-title mb-0"><%= data.stats.totalBookings %></h2>
-              </div>
-              <div class="align-self-center">
-                <i class="bi bi-ticket-detailed text-primary" style="font-size: 2rem;"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 mb-3">
-        <div class="card stat-card confirmed h-100">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h6 class="card-subtitle mb-2 text-muted">Confirmed</h6>
-                <h2 class="card-title mb-0 text-success"><%= data.stats.confirmedBookings %></h2>
-              </div>
-              <div class="align-self-center">
-                <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 mb-3">
-        <div class="card stat-card upcoming h-100">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h6 class="card-subtitle mb-2 text-muted">Upcoming</h6>
-                <h2 class="card-title mb-0 text-info"><%= data.stats.upcomingBookings %></h2>
-              </div>
-              <div class="align-self-center">
-                <i class="bi bi-calendar-check text-info" style="font-size: 2rem;"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 mb-3">
-        <div class="card stat-card cancelled h-100">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h6 class="card-subtitle mb-2 text-muted">Cancelled</h6>
-                <h2 class="card-title mb-0 text-danger"><%= data.stats.cancelledBookings %></h2>
-              </div>
-              <div class="align-self-center">
-                <i class="bi bi-x-circle text-danger" style="font-size: 2rem;"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <div class="container-fluid p-0">
+    <div class="row g-0 min-vh-100">
+      <div class="col dashboard-container">
+        <div class="container mt-4">
 
-    <!-- Upcoming Bookings -->
-    <% if (data.upcomingBookings && data.upcomingBookings.length > 0) { %>
-      <div class="row mb-4">
-        <div class="col-12">
-          <div class="card">
-            <div class="card-header bg-info text-white">
-              <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Upcoming Trips</h5>
+          <!-- Statistics Overview -->
+          <div class="section-card">
+            <h2 class="section-title">
+              <i class="bi bi-bar-chart-line me-2"></i>
+              Booking Overview
+            </h2>
+            <div class="row">
+              <div class="col-md-3 mb-3">
+                <div class="stat-card h-100">
+                  <div class="stat-icon"><i class="bi bi-ticket-detailed"></i></div>
+                  <div class="stat-value"><%= data.stats.totalBookings %></div>
+                  <div class="stat-label">Total Bookings</div>
+                </div>
+              </div>
+              <div class="col-md-3 mb-3">
+                <div class="stat-card h-100">
+                  <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+                  <div class="stat-value"><%= data.stats.confirmedBookings %></div>
+                  <div class="stat-label">Confirmed</div>
+                </div>
+              </div>
+              <div class="col-md-3 mb-3">
+                <div class="stat-card h-100">
+                  <div class="stat-icon"><i class="bi bi-calendar-check"></i></div>
+                  <div class="stat-value"><%= data.stats.upcomingBookings %></div>
+                  <div class="stat-label">Upcoming</div>
+                </div>
+              </div>
+              <div class="col-md-3 mb-3">
+                <div class="stat-card h-100">
+                  <div class="stat-icon"><i class="bi bi-x-circle"></i></div>
+                  <div class="stat-value"><%= data.stats.cancelledBookings %></div>
+                  <div class="stat-label">Cancelled</div>
+                </div>
+              </div>
             </div>
-            <div class="card-body">
+          </div>
+
+          <!-- Upcoming Bookings -->
+          <% if (data.upcomingBookings && data.upcomingBookings.length > 0) { %>
+            <div class="section-card">
+              <h2 class="section-title"><i class="bi bi-calendar-event me-2"></i>Upcoming Trips</h2>
               <div class="row">
                 <% data.upcomingBookings.forEach(booking => { %>
                   <div class="col-md-6 col-lg-4 mb-3">
@@ -172,24 +382,14 @@
                             </div>
                           </div>
                         <% } else { %>
-                          <div class="route-info mb-3">
-                            <div class="text-muted text-center">
-                              <i class="bi bi-exclamation-triangle"></i> Route details not available
-                            </div>
-                          </div>
+                          <div class="route-info mb-3 text-muted text-center"><i class="bi bi-exclamation-triangle"></i> Route details not available</div>
                         <% } %>
                         <div class="d-flex justify-content-between align-items-center">
-                          <small class="text-muted">
-                            <i class="bi bi-person-fill"></i> <%= booking.seats %> seat(s)
-                          </small>
-                          <small class="text-muted">
-                            <i class="bi bi-calendar"></i> <%= new Date(booking.createdAt).toLocaleDateString() %>
-                          </small>
+                          <small class="text-muted"><i class="bi bi-person-fill"></i> <%= booking.seats %> seat(s)</small>
+                          <small class="text-muted"><i class="bi bi-calendar"></i> <%= new Date(booking.createdAt).toLocaleDateString() %></small>
                         </div>
                         <div class="mt-3">
-                          <button class="btn btn-outline-danger btn-sm" onclick="cancelBooking('<%= booking._id %>')">
-                            <i class="bi bi-x-circle"></i> Cancel Trip
-                          </button>
+                          <button class="btn btn-outline-danger btn-sm" onclick="cancelBooking('<%= booking._id %>')"><i class="bi bi-x-circle"></i> Cancel Trip</button>
                         </div>
                       </div>
                     </div>
@@ -197,151 +397,125 @@
                 <% }); %>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    <% } %>
+          <% } %>
 
-    <!-- All Bookings -->
-    <div class="row">
-      <div class="col-lg-8 mb-4">
-        <div class="card">
-          <div class="card-header bg-white">
-            <div class="d-flex justify-content-between align-items-center">
-              <h5 class="mb-0"><i class="bi bi-list-ul"></i> My Bookings</h5>
-              <div class="btn-group btn-group-sm">
-                <button class="btn btn-outline-secondary active" onclick="filterBookings('all')">All</button>
-                <button class="btn btn-outline-secondary" onclick="filterBookings('confirmed')">Confirmed</button>
-                <button class="btn btn-outline-secondary" onclick="filterBookings('cancelled')">Cancelled</button>
+          <!-- All Bookings + Quick Actions Row -->
+          <div class="row">
+            <div class="col-lg-8 mb-4">
+              <div class="section-card">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                  <h2 class="section-title mb-0"><i class="bi bi-list-ul me-2"></i>My Bookings</h2>
+                  <div class="btn-group">
+                    <button class="btn btn-outline-secondary active" onclick="filterBookings('all')">All</button>
+                    <button class="btn btn-outline-secondary" onclick="filterBookings('confirmed')">Confirmed</button>
+                    <button class="btn btn-outline-secondary" onclick="filterBookings('cancelled')">Cancelled</button>
+                  </div>
+                </div>
+                <div class="table-container">
+                  <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Booking ID</th>
+                        <th>Route</th>
+                        <th>Seats</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="bookingsTable">
+                      <% if (data.bookings && data.bookings.length > 0) { %>
+                        <% data.bookings.forEach(booking => { %>
+                          <tr data-status="<%= booking.status %>">
+                            <td><code>#<%= booking._id.toString().slice(-6) %></code></td>
+                            <td>
+                              <% if (booking.schedule && booking.schedule.route) { %>
+                                <strong><%= booking.schedule.route.routeNumber %></strong>
+                                <br><small class="text-muted"><%= booking.schedule.route.origin %> → <%= booking.schedule.route.destination %></small>
+                              <% } else { %>
+                                <span class="text-muted">Route not found</span>
+                              <% } %>
+                            </td>
+                            <td><span class="status-badge status-pending"><%= booking.seats %> seat(s)</span></td>
+                            <td>
+                              <% if (booking.status === 'confirmed') { %>
+                                <span class="status-badge status-confirmed">Confirmed</span>
+                              <% } else if (booking.status === 'cancelled') { %>
+                                <span class="status-badge status-cancelled">Cancelled</span>
+                              <% } else { %>
+                                <span class="status-badge status-pending"><%= booking.status %></span>
+                              <% } %>
+                            </td>
+                            <td><small><%= new Date(booking.createdAt).toLocaleDateString() %></small></td>
+                            <td>
+                              <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary btn-sm" title="View Details" onclick="viewBookingDetails('<%= booking._id %>')"><i class="bi bi-eye"></i></button>
+                                <% if (booking.status === 'confirmed') { %>
+                                  <button class="btn btn-outline-danger btn-sm" title="Cancel Booking" onclick="cancelBooking('<%= booking._id %>')"><i class="bi bi-x-circle"></i></button>
+                                <% } %>
+                              </div>
+                            </td>
+                          </tr>
+                        <% }); %>
+                      <% } else { %>
+                        <tr>
+                          <td colspan="6" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox"></i> No bookings found
+                            <br><a href="/user/<%= data.user.id %>/bookings/new" class="btn btn-primary btn-sm mt-2">Make Your First Booking</a>
+                          </td>
+                        </tr>
+                      <% } %>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-lg-4 mb-4">
+              <div class="section-card">
+                <h3 class="section-title"><i class="bi bi-lightning me-2"></i>Quick Actions</h3>
+                <div class="d-grid gap-3">
+                  <a href="/user/<%= data.user.id %>/bookings/new" class="btn-custom"><i class="bi bi-plus-circle"></i> New Booking</a>
+                  <a href="/user/schedule" class="btn-custom"><i class="bi bi-calendar-week"></i> View Schedules</a>
+                  <a href="/user/routes" class="btn-custom"><i class="bi bi-map"></i> Browse Routes</a>
+                  <a href="/user/profile" class="btn-custom"><i class="bi bi-person-gear"></i> Edit Profile</a>
+                </div>
               </div>
             </div>
           </div>
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-hover mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th>Booking ID</th>
-                    <th>Route</th>
-                    <th>Seats</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="bookingsTable">
-                  <% if (data.bookings && data.bookings.length > 0) { %>
-                    <% data.bookings.forEach(booking => { %>
-                      <tr data-status="<%= booking.status %>">
-                        <td><code>#<%= booking._id.toString().slice(-6) %></code></td>
-                        <td>
-                          <% if (booking.schedule && booking.schedule.route) { %>
-                            <strong><%= booking.schedule.route.routeNumber %></strong>
-                            <br><small class="text-muted"><%= booking.schedule.route.origin %> → <%= booking.schedule.route.destination %></small>
-                          <% } else { %>
-                            <span class="text-muted">Route not found</span>
-                          <% } %>
-                        </td>
-                        <td><span class="badge bg-info"><%= booking.seats %> seat(s)</span></td>
-                        <td>
-                          <% if (booking.status === 'confirmed') { %>
-                            <span class="badge bg-success status-badge">Confirmed</span>
-                          <% } else if (booking.status === 'cancelled') { %>
-                            <span class="badge bg-danger status-badge">Cancelled</span>
-                          <% } else { %>
-                            <span class="badge bg-secondary status-badge"><%= booking.status %></span>
-                          <% } %>
-                        </td>
-                        <td><small><%= new Date(booking.createdAt).toLocaleDateString() %></small></td>
-                        <td>
-                          <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-primary btn-sm" title="View Details" 
-                                    onclick="viewBookingDetails('<%= booking._id %>')">
-                              <i class="bi bi-eye"></i>
-                            </button>
-                            <% if (booking.status === 'confirmed') { %>
-                              <button class="btn btn-outline-danger btn-sm" title="Cancel Booking" 
-                                      onclick="cancelBooking('<%= booking._id %>')">
-                                <i class="bi bi-x-circle"></i>
-                              </button>
-                            <% } %>
-                          </div>
-                        </td>
-                      </tr>
+
+          <!-- Available Routes - Full Width Row -->
+          <div class="row">
+            <div class="col-12 mb-4">
+              <div class="section-card">
+                <h3 class="section-title"><i class="bi bi-map me-2"></i>Available Routes</h3>
+                <div class="card-body">
+                  <% if (data.availableRoutes && data.availableRoutes.length > 0) { %>
+                    <% data.availableRoutes.slice(0, 5).forEach(route => { %>
+                      <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <div>
+                          <strong><%= route.routeNumber || 'N/A' %></strong>
+                          <br><small class="text-muted"><%= route.origin || 'N/A' %> → <%= route.destination || 'N/A' %></small>
+                          <% if (route.fare) { %><br><small class="text-success">Fare: ₹<%= route.fare %></small><% } %>
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="bookRoute('<%= route._id %>')">Book</button>
+                      </div>
                     <% }); %>
-                  <% } else { %>
-                    <tr>
-                      <td colspan="6" class="text-center py-4 text-muted">
-                        <i class="bi bi-inbox"></i> No bookings found
-                        <br><a href="/user/<%= data.user.id %>/bookings/new" class="btn btn-primary btn-sm mt-2">Make Your First Booking</a>
-                      </td>
-                    </tr>
-                  <% } %>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Quick Actions & New Booking -->
-      <div class="col-lg-4 mb-4">
-        <div class="card">
-          <div class="card-header bg-white">
-            <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
-          </div>
-          <div class="card-body">
-            <div class="d-grid gap-3">
-              <a href="/user/<%= data.user.id %>/bookings/new" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> New Booking
-              </a>
-              <a href="/user/schedule" class="btn btn-success">
-                <i class="bi bi-calendar-week"></i> View Schedules
-              </a>
-              <a href="/user/routes" class="btn btn-info">
-                <i class="bi bi-map"></i> Browse Routes
-              </a>
-              <a href="/user/profile" class="btn btn-secondary">
-                <i class="bi bi-person-gear"></i> Edit Profile
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <!-- Available Routes -->
-        <div class="card mt-4">
-          <div class="card-header bg-white">
-            <h5 class="mb-0"><i class="bi bi-map"></i> Available Routes</h5>
-          </div>
-          <div class="card-body">
-            <% if (data.availableRoutes && data.availableRoutes.length > 0) { %>
-              <% data.availableRoutes.slice(0, 5).forEach(route => { %>
-                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                  <div>
-                    <strong><%= route.routeNumber || 'N/A' %></strong>
-                    <br><small class="text-muted"><%= route.origin || 'N/A' %> → <%= route.destination || 'N/A' %></small>
-                    <% if (route.fare) { %>
-                      <br><small class="text-success">Fare: ₹<%= route.fare %></small>
+                    <% if (data.availableRoutes.length > 5) { %>
+                      <div class="text-center mt-3"><a href="/user/routes" class="btn btn-sm btn-link">View All Routes</a></div>
                     <% } %>
-                  </div>
-                  <button class="btn btn-sm btn-outline-primary" onclick="bookRoute('<%= route._id %>')">
-                    Book
-                  </button>
+                  <% } else { %>
+                    <p class="text-muted text-center">No routes available</p>
+                  <% } %>
                 </div>
-              <% }); %>
-              <% if (data.availableRoutes.length > 5) { %>
-                <div class="text-center mt-3">
-                  <a href="/user/routes" class="btn btn-sm btn-link">View All Routes</a>
-                </div>
-              <% } %>
-            <% } else { %>
-              <p class="text-muted text-center">No routes available</p>
-            <% } %>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
-  </div>
+
+        </div> <!-- /.container mt-4 -->
+      </div> <!-- /.col dashboard-container -->
+    </div> <!-- /.row -->
+  </div> <!-- /.container-fluid -->
 
   <!-- Cancel Booking Modal -->
   <div class="modal fade" id="cancelModal" tabindex="-1">
@@ -378,6 +552,8 @@
         </div>
       </div>
     </div>
+  </div>
+
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -468,5 +644,6 @@
       }
     });
   </script>
+  </div>
 </body>
 </html>

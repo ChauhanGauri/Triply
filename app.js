@@ -44,25 +44,23 @@ mongoose
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// Default route - redirect to appropriate login
-app.get("/", (req, res) => {
-  console.log('Home route accessed. User session:', req.session.user);
-  
-  if (req.session.user) {
-    if (req.session.user.role === 'admin') {
-      console.log('Redirecting to admin dashboard');
-      return res.redirect('/admin/dashboard');
-    } else {
-      console.log('Redirecting to user dashboard');
+// Default route - show home or redirect based on session
+app.get('/', (req, res) => {
+  try {
+    // If a user is logged in, redirect to their dashboard
+    if (req.session && req.session.user) {
+      if (req.session.user.role === 'admin') {
+        return res.redirect('/admin/dashboard');
+      }
       return res.redirect(`/user/${req.session.user.id}/dashboard`);
     }
+
+    // Not logged in -> render public home page
+    return res.render('home', { title: 'Public Transport Management System' });
+  } catch (err) {
+    console.error('Error handling root route:', err);
+    return res.status(500).render('error', { title: 'Error', message: 'Unable to load home page', error: err });
   }
-  
-  console.log('Rendering home page');
-  res.render('home', { 
-    title: 'Public Transport Management System',
-    user: req.session.user 
-  });
 });
 
 // Import routes
