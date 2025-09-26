@@ -8,39 +8,43 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
   <style>
     body {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: #1E293B;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-    
+
     .login-container {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
+      background: #FFFFFF;
       border-radius: 20px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
       padding: 3rem;
       width: 100%;
       max-width: 450px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      animation: fadeInUp 0.8s ease-out;
     }
-    
+
     .login-header {
       text-align: center;
       margin-bottom: 2rem;
     }
-    
+
     .login-header h1 {
-      color: #333;
+      background: linear-gradient(135deg, #1E293B 0%, #F59E0B 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       font-weight: 700;
       margin-bottom: 0.5rem;
     }
-    
+
     .login-header p {
-      color: #666;
+      color: #1E293B;
       font-size: 1rem;
+      opacity: 0.8;
     }
     
     .form-control {
@@ -53,13 +57,13 @@
     }
     
     .form-control:focus {
-      border-color: #667eea;
-      box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+      border-color: #F59E0B;
+      box-shadow: 0 0 0 0.2rem rgba(245, 158, 11, 0.25);
       background: white;
     }
     
     .btn-login {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #F59E0B 0%, #3B82F6 100%);
       border: none;
       border-radius: 12px;
       padding: 12px;
@@ -67,12 +71,13 @@
       font-size: 16px;
       transition: all 0.3s ease;
       width: 100%;
+      color: white;
     }
     
     .btn-login:hover {
-      background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+      background: linear-gradient(135deg, #D97706 0%, #2563eb 100%);
       transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+      box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
     }
     
     .alert {
@@ -91,12 +96,24 @@
       left: 16px;
       top: 50%;
       transform: translateY(-50%);
-      color: #999;
+      color: #1E293B;
+      opacity: 0.6;
       z-index: 3;
     }
     
     .input-group .form-control {
       padding-left: 48px;
+    }
+    
+    @keyframes fadeInUp {
+      0% {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
     
     .user-link {
@@ -132,11 +149,8 @@
 <body>
   <div class="login-container">
     <div class="login-header">
-      <span class="admin-badge">
-        <i class="bi bi-shield-check"></i> Admin Access
-      </span>
+    
       <h1><i class="bi bi-speedometer2"></i> Admin Login</h1>
-      <p>Public Transport Management System</p>
     </div>
     
     <% if (error) { %>
@@ -177,14 +191,6 @@
     
     <div class="user-link">
       <p class="mb-0">Not an admin? <a href="/user/login">Login as User</a></p>
-    </div>
-    
-    <!-- Debug info (remove in production) -->
-    <div class="mt-4 p-3 bg-light rounded" style="font-size: 0.875rem;">
-      <strong>Default Admin Credentials:</strong><br>
-      Email: admin@transport.com<br>
-      Password: admin123<br>
-      <small class="text-muted">Use these credentials for testing. <a href="/auth/create-admin" target="_blank">Create admin if doesn't exist</a></small>
     </div>
   </div>
   

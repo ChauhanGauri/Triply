@@ -6,98 +6,277 @@
   <title><%= title || "Schedule Form" %></title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <style>
+    :root {
+      --primary-dark: #1E293B;
+      --primary-blue: #3B82F6;
+      --accent-amber: #F59E0B;
+      --accent-pink: #EC4899;
+      --neutral-light: #F8FAFC;
+      --neutral-gray: #F1F5F9;
+    }
+
+    body {
+      background: linear-gradient(135deg, #F8FAFC 0%, #FFFFFF 100%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .dashboard-container {
+      background: var(--neutral-light);
+      min-height: 100vh;
+    }
+
+    .dashboard-header {
+      background: var(--primary-dark);
+      color: white;
+      padding: 2rem 0;
+      box-shadow: 0 4px 12px rgba(30, 41, 59, 0.15);
+    }
+
+    .dashboard-title {
+      background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .btn-custom {
+      background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+      border: none;
+      border-radius: 12px;
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      color: white;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-custom:hover {
+      background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+      color: white;
+      text-decoration: none;
+    }
+
+    .btn-outline-custom {
+      background: transparent;
+      border: 2px solid #F59E0B;
+      color: #F59E0B;
+      border-radius: 12px;
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-outline-custom:hover {
+      background: #F59E0B;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+      text-decoration: none;
+    }
+
+    .form-card {
+      background: #FFFFFF;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 4px 12px rgba(30, 41, 59, 0.08);
+      border: 1px solid #F1F5F9;
+    }
+
+    .form-title {
+      color: #1E293B;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      font-size: 1.25rem;
+    }
+
+    .form-control:focus, .form-select:focus {
+      border-color: #F59E0B;
+      box-shadow: 0 0 0 0.2rem rgba(245, 158, 11, 0.25);
+    }
+
+    .btn-secondary {
+      background: #6B7280;
+      border: none;
+      border-radius: 12px;
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+      background: #4B5563;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(107, 114, 128, 0.3);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+      border: none;
+      border-radius: 12px;
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-container {
+        border-radius: 0;
+        margin: 0;
+      }
+
+      .dashboard-header {
+        border-radius: 0;
+        text-align: center;
+      }
+
+      .form-card {
+        margin: 1rem;
+        padding: 1.5rem;
+      }
+    }
+  </style>
 </head>
-<body class="bg-light">
+<body>
 
-  <!-- Header -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container">
-      <a class="navbar-brand" href="/admin/dashboard">
-        <i class="bi bi-bus-front"></i> Transport Admin
-      </a>
-      <div class="navbar-nav ms-auto">
-        <a class="nav-link" href="/admin/dashboard">Dashboard</a>
-        <a class="nav-link" href="/admin/routes">Routes</a>
-        <a class="nav-link active" href="/admin/schedules">Schedules</a>
-        <a class="nav-link" href="/admin/users">Users</a>
-        <a class="nav-link" href="/auth/logout">Logout</a>
-      </div>
-    </div>
-  </nav>
+  <div class="container-fluid p-0">
+    <div class="row g-0 min-vh-100">
+      <!-- Main Content -->
+      <div class="col dashboard-container">
 
-  <div class="container mt-4">
-    <div class="row justify-content-center">
-      <div class="col-lg-8">
-        <div class="card">
-          <div class="card-header">
-            <h4 class="mb-0">
-              <i class="bi bi-calendar-event"></i> 
-              <%= schedule ? 'Edit Schedule' : 'Add New Schedule' %>
-            </h4>
-          </div>
-          <div class="card-body">
-            <form action="<%= schedule ? `/admin/schedules/${schedule._id}?_method=PUT` : '/admin/schedules' %>" method="POST">
-              <div class="mb-3">
-                <label for="route" class="form-label">Route *</label>
-                <select class="form-select" id="route" name="route" required>
-                  <option value="">Select a route</option>
-                  <% routes.forEach(route => { %>
-                    <option value="<%= route._id %>" <%= schedule && schedule.route && schedule.route._id === route._id ? 'selected' : '' %>>
-                      <%= route.routeNumber %> - <%= route.origin %> → <%= route.destination %>
-                    </option>
-                  <% }) %>
-                </select>
-              </div>
-
-              <div class="mb-3">
-                <label for="journeyDate" class="form-label">Journey Date *</label>
-                <input type="date" class="form-control" id="journeyDate" name="journeyDate"
-                       value="<%= schedule && schedule.journeyDate ? new Date(schedule.journeyDate).toISOString().split('T')[0] : '' %>" required>
-                <small class="form-text text-muted">Select the date for this scheduled journey</small>
-              </div>
-
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label for="departureTime" class="form-label">Departure Time *</label>
-                  <input type="time" class="form-control" id="departureTime" name="departureTime"
-                         value="<%= schedule ? schedule.departureTime || '' : '' %>" required>
-                  <small class="form-text text-muted">Format: HH:MM (e.g., 14:30 for 2:30 PM)</small>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label for="arrivalTime" class="form-label">Arrival Time *</label>
-                  <input type="time" class="form-control" id="arrivalTime" name="arrivalTime"
-                         value="<%= schedule ? schedule.arrivalTime || '' : '' %>" required>
-                  <small class="form-text text-muted">Format: HH:MM (e.g., 16:45 for 4:45 PM)</small>
-                </div>
-              </div>
-
-              <div class="row">
-                <div class="col-md-6 mb-3">
-                  <label for="busNumber" class="form-label">Bus Number *</label>
-                  <input type="text" class="form-control" id="busNumber" name="busNumber" 
-                         value="<%= schedule ? schedule.busNumber || '' : '' %>" 
-                         placeholder="e.g., PB-01-1234" required>
-                  <small class="form-text text-muted">Enter the bus registration number</small>
-                </div>
-                <div class="col-md-6 mb-3">
-                  <label for="driverName" class="form-label">Driver Name</label>
-                  <input type="text" class="form-control" id="driverName" name="driverName" 
-                         value="<%= schedule ? schedule.driverName || '' : '' %>" 
-                         placeholder="Enter driver's full name">
-                  <small class="form-text text-muted">Optional: Name of the assigned driver</small>
-                </div>
-              </div>
-
-              <div class="d-flex justify-content-between">
-                <a href="/admin/schedules" class="btn btn-secondary">
-                  <i class="bi bi-arrow-left"></i> Back to Schedules
+        <!-- Header -->
+        <div class="dashboard-header">
+          <div class="container">
+            <div class="row align-items-center">
+              <div class="col">
+                <a href="/admin/dashboard" class="text-decoration-none">
+                  <h1 class="dashboard-title mb-1">
+                    <i class="bi bi-bus-front me-3"></i>
+                    Triply
+                  </h1>
                 </a>
-                <button type="submit" class="btn btn-primary">
-                  <i class="bi bi-check-circle"></i> 
-                  <%= schedule ? 'Update Schedule' : 'Create Schedule' %>
-                </button>
+                <p class="mb-0 opacity-75">Admin Dashboard</p>
               </div>
-            </form>
+              <div class="col-auto">
+                <div class="d-flex gap-2 flex-wrap">
+                  <a href="/admin/bookings" class="btn-custom">
+                    <i class="bi bi-ticket-detailed"></i>
+                    Bookings
+                  </a>
+                  <a href="/admin/routes" class="btn-custom">
+                    <i class="bi bi-map"></i>
+                    Routes
+                  </a>
+                  <a href="/admin/schedules" class="btn-custom">
+                    <i class="bi bi-calendar-event"></i>
+                    Schedules
+                  </a>
+                  <a href="/admin/users" class="btn-custom">
+                    <i class="bi bi-people"></i>
+                    Users
+                  </a>
+                  <a href="/auth/logout" class="btn-outline-custom">
+                    <i class="bi bi-box-arrow-right"></i>
+                    Logout
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="container py-4">
+          <div class="row justify-content-center">
+            <div class="col-lg-8">
+              <div class="form-card">
+                <h2 class="form-title">
+                  <i class="bi bi-calendar-event me-2"></i>
+                  <%= schedule ? 'Edit Schedule' : 'Add New Schedule' %>
+                </h2>
+                <form action="<%= schedule ? `/admin/schedules/${schedule._id}?_method=PUT` : '/admin/schedules' %>" method="POST">
+                  <div class="mb-3">
+                    <label for="route" class="form-label">Route *</label>
+                    <select class="form-select" id="route" name="route" required>
+                      <option value="">Select a route</option>
+                      <% routes.forEach(route => { %>
+                        <option value="<%= route._id %>" <%= schedule && schedule.route && schedule.route._id === route._id ? 'selected' : '' %>>
+                          <%= route.routeNumber %> - <%= route.origin %> → <%= route.destination %>
+                        </option>
+                      <% }) %>
+                    </select>
+                  </div>
+
+                  <div class="mb-3">
+                    <label for="journeyDate" class="form-label">Journey Date *</label>
+                    <input type="date" class="form-control" id="journeyDate" name="journeyDate"
+                           value="<%= schedule && schedule.journeyDate ? new Date(schedule.journeyDate).toISOString().split('T')[0] : '' %>" required>
+                    <small class="form-text text-muted">Select the date for this scheduled journey</small>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label for="departureTime" class="form-label">Departure Time *</label>
+                      <input type="time" class="form-control" id="departureTime" name="departureTime"
+                             value="<%= schedule ? schedule.departureTime || '' : '' %>" required>
+                      <small class="form-text text-muted">Format: HH:MM (e.g., 14:30 for 2:30 PM)</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                      <label for="arrivalTime" class="form-label">Arrival Time *</label>
+                      <input type="time" class="form-control" id="arrivalTime" name="arrivalTime"
+                             value="<%= schedule ? schedule.arrivalTime || '' : '' %>" required>
+                      <small class="form-text text-muted">Format: HH:MM (e.g., 16:45 for 4:45 PM)</small>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label for="busNumber" class="form-label">Bus Number *</label>
+                      <input type="text" class="form-control" id="busNumber" name="busNumber"
+                             value="<%= schedule ? schedule.busNumber || '' : '' %>"
+                             placeholder="e.g., PB-01-1234" required>
+                      <small class="form-text text-muted">Enter the bus registration number</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                      <label for="driverName" class="form-label">Driver Name</label>
+                      <input type="text" class="form-control" id="driverName" name="driverName"
+                             value="<%= schedule ? schedule.driverName || '' : '' %>"
+                             placeholder="Enter driver's full name">
+                      <small class="form-text text-muted">Optional: Name of the assigned driver</small>
+                    </div>
+                  </div>
+
+                  <div class="d-flex justify-content-between">
+                    <a href="/admin/schedules" class="btn btn-secondary">
+                      <i class="bi bi-arrow-left"></i> Back to Schedules
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                      <i class="bi bi-check-circle"></i>
+                      <%= schedule ? 'Update Schedule' : 'Create Schedule' %>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
         </div>
       </div>

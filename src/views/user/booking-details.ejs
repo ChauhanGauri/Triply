@@ -7,34 +7,117 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
   <style>
+    body {
+      background: #1E293B;
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #1E293B;
+    }
+
+    .dashboard-container {
+      background: #FFFFFF;
+      min-height: 100vh;
+      border-radius: 20px 0 0 20px;
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+      animation: slideIn 0.8s ease-out;
+    }
+
+    .user-header {
+      background: #1E293B;
+      color: white;
+      padding: 2rem 0;
+      border-radius: 20px 0 0 0;
+    }
+
+    .user-title {
+      background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 700;
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .btn-custom {
+      background: linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
+      border: none;
+      border-radius: 12px;
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      color: white;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-custom:hover {
+      background: linear-gradient(135deg, #DB2777 0%, #D97706 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(236, 72, 153, 0.3);
+      color: white;
+      text-decoration: none;
+    }
+
+    .btn-outline-custom {
+      background: transparent;
+      border: 2px solid #EC4899;
+      color: #EC4899;
+      border-radius: 12px;
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-outline-custom:hover {
+      background: #EC4899;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(236, 72, 153, 0.3);
+      text-decoration: none;
+    }
+
     .trip-summary {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
       color: white;
       border-radius: 15px;
     }
+
     .passenger-card {
-      border: 2px solid #e9ecef;
-      border-radius: 10px;
+      border: 2px solid #E2E8F0;
+      border-radius: 12px;
       transition: all 0.3s ease;
+      background: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(30, 41, 59, 0.08);
     }
+
     .passenger-card:focus-within {
-      border-color: #007bff;
-      box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+      border-color: #EC4899;
+      box-shadow: 0 0 0 0.2rem rgba(236, 72, 153, 0.25);
     }
+
     .price-breakdown {
-      background-color: #f8f9fa;
-      border-radius: 10px;
-      border: 1px solid #dee2e6;
+      background: linear-gradient(135deg, #F8FAFC 0%, #FFFFFF 100%);
+      border-radius: 12px;
+      border: 1px solid #E2E8F0;
     }
+
     .total-price {
-      background: linear-gradient(45deg, #28a745, #20c997);
+      background: linear-gradient(45deg, #10B981, #EC4899);
       color: white;
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 1.25rem;
       font-weight: 600;
     }
+
     .step-indicator {
-      background-color: #007bff;
+      background: linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
       color: white;
       border-radius: 50%;
       width: 30px;
@@ -44,23 +127,49 @@
       justify-content: center;
       font-weight: 600;
     }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
   </style>
 </head>
-<body class="bg-light">
+<body>
 
-  <!-- Header -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container">
-      <a class="navbar-brand" href="/user/<%= user.id %>/dashboard">
-        <i class="bi bi-bus-front"></i> Transport System
-      </a>
-      <div class="navbar-nav ms-auto">
-        <a class="nav-link" href="/user/<%= user.id %>/dashboard">Dashboard</a>
-        <a class="nav-link" href="/user/<%= user.id %>/bookings">My Bookings</a>
-        <a class="nav-link" href="/auth/logout">Logout</a>
+  <div class="container-fluid p-0">
+    <div class="row g-0 min-vh-100">
+      <div class="col dashboard-container">
+    <div class="user-header">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col">
+            <a href="/user/<%= user.id %>/dashboard" class="text-decoration-none">
+              <h1 class="user-title">
+                <i class="bi bi-bus-front me-3"></i>
+                Triply
+              </h1>
+            </a>
+          </div>
+          <div class="col-auto">
+            <a href="/user/<%= user.id %>/dashboard" class="btn-outline-custom me-2">
+              <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a href="/user/<%= user.id %>/bookings" class="btn-outline-custom me-2">
+              <i class="fas fa-list"></i> My Bookings
+            </a>
+            <a href="/auth/logout" class="btn-outline-custom">
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+          </div>
+        </div>
       </div>
     </div>
-  </nav>
 
   <div class="container mt-4">
     <!-- Progress Steps -->
@@ -345,5 +454,8 @@
       });
     });
   </script>
+    </div>
+  </div>
+</div>
 </body>
 </html>
