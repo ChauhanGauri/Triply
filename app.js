@@ -1,6 +1,8 @@
 // app.js
 require("dotenv").config();
 const express = require("express");
+const http = require('http');
+const { initSocket } = require('./src/config/socket');
 const mongoose = require("mongoose");
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
@@ -110,8 +112,13 @@ app.use((req, res) => {
   });
 });
 
-// Start server
+// Start server using HTTP so socket.io can attach
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const server = http.createServer(app);
+
+// initialize socket.io
+initSocket(server);
+
+server.listen(PORT, () => {
   console.log(`✅ Server is running on port ${PORT}`);
 });

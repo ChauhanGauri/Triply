@@ -1,6 +1,7 @@
 const Booking = require('../models/Booking');
 const Schedule = require('../models/Schedule');
 const PassengerManifest = require('../models/PassengerManifest');
+const { getIo } = require('../config/socket');
 
 class BookingController {
     async createBooking(req, res) {
@@ -61,6 +62,20 @@ class BookingController {
             
             console.log(`Booking created successfully for ${seatCount} seats`);
             
+            // Emit realtime update to admins and specific user room
+            try {
+                const io = getIo();
+                // populate booking for richer payload
+                const populated = await Booking.findById(newBooking._id)
+                    .populate('user', 'name email')
+                    .populate({ path: 'schedule', populate: { path: 'route' } });
+                io.to('admins').emit('bookingCreated', { booking: populated });
+                io.to(`user_${populated.user ? populated.user._id : 'unknown'}`).emit('bookingCreated', { booking: populated });
+            } catch (emitErr) {
+                // Socket might not be initialized in some environments; ignore errors
+                console.warn('Socket emit skipped (not initialized):', emitErr.message);
+            }
+
             // Check if this is an API request or web request
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.status(201).json({ 
@@ -196,7 +211,23 @@ class BookingController {
             if (!updatedBooking) {
                 return res.status(404).json({ message: "Booking not found" });
             }
-            
+            // Emit bookingCancelled to the user who owns this booking
+            try {
+                const io = getIo();
+                // determine user id string
+                let userId = 'unknown';
+                if (updatedBooking.user) {
+                    if (typeof updatedBooking.user === 'string') userId = updatedBooking.user;
+                    else if (updatedBooking.user._id) userId = updatedBooking.user._id.toString();
+                    else if (updatedBooking.user.id) userId = updatedBooking.user.id;
+                }
+                io.to(`user_${userId}`).emit('bookingCancelled', { booking: updatedBooking });
+                // Also notify admins
+                io.to('admins').emit('bookingCancelled', { booking: updatedBooking });
+            } catch (emitErr) {
+                console.warn('Socket emit skipped (not initialized):', emitErr.message);
+            }
+
             res.status(200).json({ 
                 message: "Booking cancelled successfully", 
                 data: updatedBooking 
@@ -313,6 +344,18 @@ class BookingController {
             
             console.log(`Booking confirmed successfully with ID: ${bookingId}`);
             
+            // Emit realtime update to admins and user room after confirmation
+            try {
+                const io = getIo();
+                const populated = await Booking.findById(newBooking._id)
+                    .populate('user', 'name email')
+                    .populate({ path: 'schedule', populate: { path: 'route' } });
+                io.to('admins').emit('bookingCreated', { booking: populated });
+                io.to(`user_${populated.user ? populated.user._id : 'unknown'}`).emit('bookingCreated', { booking: populated });
+            } catch (emitErr) {
+                console.warn('Socket emit skipped (not initialized):', emitErr.message);
+            }
+
             // Check if API request
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.status(201).json({

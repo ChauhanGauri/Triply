@@ -573,5 +573,63 @@
       `;
     }
   </script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    try {
+      const socket = io();
+      socket.emit('joinRoom', 'admins');
+
+      socket.on('bookingCreated', (payload) => {
+        try {
+          const booking = payload.booking;
+          const tbody = document.querySelector('.table.table-hover tbody');
+          if (!tbody) return;
+
+          const tr = document.createElement('tr');
+
+          const userCell = `<td>${escapeHtml(booking.user ? booking.user.name : 'N/A')} (${escapeHtml(booking.user ? booking.user.email : '')})</td>`;
+
+          let routeHtml = '<td>N/A</td>';
+          if (booking.schedule && booking.schedule.route) {
+            routeHtml = `<td>${escapeHtml(booking.schedule.route.routeNumber || '')}<br><small class="text-muted">${escapeHtml(booking.schedule.route.origin || '')} → ${escapeHtml(booking.schedule.route.destination || '')}</small></td>`;
+          }
+
+          const scheduleCell = `<td>${booking.schedule && booking.schedule.departureTime ? new Date(booking.schedule.departureTime).toLocaleString() : 'N/A'}</td>`;
+
+          let statusBadge = `<span class="status-badge status-pending">${escapeHtml(booking.status || 'pending')}</span>`;
+          if (booking.status === 'confirmed') statusBadge = '<span class="status-badge status-confirmed">Confirmed</span>';
+          if (booking.status === 'cancelled') statusBadge = '<span class="status-badge status-cancelled">Cancelled</span>';
+
+          const statusCell = `<td>${statusBadge}</td>`;
+          const dateCell = `<td>${new Date(booking.createdAt).toLocaleString()}</td>`;
+
+          const actionsCell = `<td><div class="btn-group btn-group-sm" role="group"><button type="button" class="btn btn-outline-primary" onclick="viewBookingDetails('${booking._id}')"><i class="bi bi-eye"></i> View Details</button><button type="button" class="btn btn-outline-info" onclick="viewCustomerProfile('${booking.user ? booking.user._id : ''}')"><i class="bi bi-person"></i> Customer</button>${booking.status === 'confirmed' ? `<button type="button" class="btn btn-outline-danger" onclick="cancelBooking('${booking._id}')"><i class="bi bi-x-circle"></i> Cancel</button>` : ''}</div></td>`;
+
+          tr.innerHTML = userCell + routeHtml + scheduleCell + statusCell + dateCell + actionsCell;
+
+          if (tbody.firstChild) tbody.insertBefore(tr, tbody.firstChild);
+          else tbody.appendChild(tr);
+        } catch (err) {
+          console.error('Error handling bookingCreated on bookings page:', err);
+        }
+      });
+
+      function escapeHtml(str) {
+        if (!str && str !== 0) return '';
+        return String(str).replace(/[&<>"'`]/g, function (s) {
+          return ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+            '`': '&#x60;'
+          })[s];
+        });
+      }
+    } catch (socketErr) {
+      console.warn('Socket.io client failed to initialize on bookings page:', socketErr.message);
+    }
+  </script>
 </body>
 </html>
