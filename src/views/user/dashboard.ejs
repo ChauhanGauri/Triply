@@ -426,7 +426,7 @@
                     <tbody id="bookingsTable">
                       <% if (data.bookings && data.bookings.length > 0) { %>
                         <% data.bookings.forEach(booking => { %>
-                          <tr data-status="<%= booking.status %>">
+                          <tr data-status="<%= booking.status %>" data-booking-id="<%= booking._id %>">
                             <td><code>#<%= booking._id.toString().slice(-6) %></code></td>
                             <td>
                               <% if (booking.schedule && booking.schedule.route) { %>
@@ -643,6 +643,54 @@
         bootstrap.Modal.getInstance(document.getElementById('cancelModal')).hide();
       }
     });
+  </script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    try {
+      const socket = io();
+      socket.emit('joinRoom', `user_<%= data.user.id %>`);
+
+      socket.on('bookingCancelled', (payload) => {
+        try {
+          const booking = payload.booking;
+
+          // Update bookings table rows
+          const row = document.querySelector(`#bookingsTable tr[data-booking-id="${booking._id}"]`);
+          if (row) {
+            row.dataset.status = 'cancelled';
+            const statusCell = row.querySelectorAll('td')[3];
+            if (statusCell) statusCell.innerHTML = '<span class="status-badge status-cancelled">Cancelled</span>';
+          }
+
+          // Update upcoming bookings cards if present
+          const cards = document.querySelectorAll('.booking-card');
+          cards.forEach(card => {
+            if (card.innerHTML.includes(booking._id)) {
+              // replace Cancel button with Cancelled badge
+              const btn = card.querySelector('button.btn-outline-danger');
+              if (btn) {
+                btn.replaceWith((() => {
+                  const span = document.createElement('span');
+                  span.className = 'badge bg-danger';
+                  span.textContent = 'Cancelled';
+                  return span;
+                })());
+              }
+              // also update any 'Upcoming' badge
+              const upcoming = card.querySelector('.upcoming-badge');
+              if (upcoming) upcoming.remove();
+            }
+          });
+
+          // Notify user
+          alert('A booking was cancelled by admin. Your UI has been updated.');
+        } catch (err) {
+          console.error('Error handling bookingCancelled on dashboard:', err);
+        }
+      });
+    } catch (err) {
+      console.warn('Socket client failed on user dashboard:', err.message);
+    }
   </script>
   </div>
 </body>

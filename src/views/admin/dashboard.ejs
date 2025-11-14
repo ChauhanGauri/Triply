@@ -554,5 +554,68 @@
       }
     });
   </script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    try {
+      const socket = io();
+      // Join admin room for real-time admin updates
+      socket.emit('joinRoom', 'admins');
+
+      socket.on('bookingCreated', (payload) => {
+        try {
+          const booking = payload.booking;
+          const tbody = document.querySelector('.table.table-hover tbody');
+          if (!tbody) return;
+
+          // Create row markup similar to server-rendered rows
+          const tr = document.createElement('tr');
+          const idCell = `<td><code>#${booking._id.toString().slice(-6)}</code></td>`;
+          const userName = booking.user ? (booking.user.name || 'Unknown User') : 'Unknown User';
+          const userEmail = booking.user ? (booking.user.email || 'N/A') : 'N/A';
+          const customerCell = `<td><div><strong>${escapeHtml(userName)}</strong><br><small class="text-muted">${escapeHtml(userEmail)}</small></div></td>`;
+
+          let routeHtml = '<td><span class="text-muted">Route not found</span></td>';
+          if (booking.schedule && booking.schedule.route) {
+            routeHtml = `<td><strong>${escapeHtml(booking.schedule.route.routeNumber || '')}</strong><br><small class="text-muted">${escapeHtml(booking.schedule.route.origin || '')} → ${escapeHtml(booking.schedule.route.destination || '')}</small></td>`;
+          }
+
+          const seatsCell = `<td><span class="badge bg-info">${booking.seats || 1} seat(s)</span></td>`;
+
+          let statusBadge = `<span class="status-badge status-pending">${escapeHtml(booking.status || 'pending')}</span>`;
+          if (booking.status === 'confirmed') statusBadge = '<span class="status-badge status-confirmed">Confirmed</span>';
+          if (booking.status === 'cancelled') statusBadge = '<span class="status-badge status-cancelled">Cancelled</span>';
+
+          const statusCell = `<td>${statusBadge}</td>`;
+          const dateCell = `<td><small>${new Date(booking.createdAt).toLocaleDateString()}</small></td>`;
+
+          const actionsCell = `<td><div class="btn-group btn-group-sm"><button class="btn btn-outline-primary btn-sm" title="View Details"><i class="bi bi-eye"></i></button>${booking.status === 'confirmed' ? `<button class="btn btn-outline-danger btn-sm" title="Cancel Booking" onclick="cancelBooking('${booking._id}')"><i class="bi bi-x-circle"></i></button>` : ''}</div></td>`;
+
+          tr.innerHTML = idCell + customerCell + routeHtml + seatsCell + statusCell + dateCell + actionsCell;
+
+          // Prepend new booking to top of list
+          if (tbody.firstChild) tbody.insertBefore(tr, tbody.firstChild);
+          else tbody.appendChild(tr);
+        } catch (err) {
+          console.error('Error handling bookingCreated payload:', err);
+        }
+      });
+
+      function escapeHtml(str) {
+        if (!str && str !== 0) return '';
+        return String(str).replace(/[&<>"'`]/g, function (s) {
+          return ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+            '`': '&#x60;'
+          })[s];
+        });
+      }
+    } catch (socketErr) {
+      console.warn('Socket.io client failed to initialize:', socketErr.message);
+    }
+  </script>
 </body>
 </html>

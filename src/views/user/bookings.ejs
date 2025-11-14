@@ -191,7 +191,7 @@
                   </thead>
                   <tbody>
                     <% bookings.forEach(booking => { %>
-                      <tr>
+                      <tr data-booking-id="<%= booking._id %>">
                         <td>
                           <% if (booking.bookingReference) { %>
                             <strong class="text-primary"><%= booking.bookingReference %></strong>
@@ -308,6 +308,33 @@
           alert('Error cancelling booking');
         });
       }
+    }
+  </script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    try {
+      const socket = io();
+      // join this user's personal room
+      socket.emit('joinRoom', `user_<%= user.id %>`);
+
+          socket.on('bookingCancelled', (payload) => {
+        try {
+          const booking = payload.booking;
+          // find table row by data attribute
+          const row = document.querySelector(`table.table-hover tbody tr[data-booking-id="${booking._id}"]`);
+          if (row) {
+            const statusCell = row.querySelectorAll('td')[5];
+            if (statusCell) statusCell.innerHTML = `<span class="badge bg-danger">Cancelled</span>`;
+          } else {
+            // If not found, show a notification to the user
+            alert('One of your bookings was cancelled by admin. Please refresh to see details.');
+          }
+        } catch (err) {
+          console.error('Error handling bookingCancelled:', err);
+        }
+      });
+    } catch (err) {
+      console.warn('Socket client failed on user bookings page:', err.message);
     }
   </script>
 </body>
