@@ -341,14 +341,14 @@
             <div class="table-responsive">
               <table class="table table-hover">
                 <thead>
-                  <tr>
+                    <tr>
                     <th>Booking ID</th>
                     <th>Customer</th>
                     <th>Route</th>
+                    <th>Schedule ID</th>
                     <th>Seats</th>
                     <th>Status</th>
                     <th>Date</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -370,6 +370,9 @@
                             <span class="text-muted">Route not found</span>
                           <% } %>
                         </td>
+                        <td>
+                          <code><%= booking.schedule && booking.schedule.scheduleId ? booking.schedule.scheduleId : (booking.schedule && booking.schedule._id ? booking.schedule._id.toString().slice(-8) : '') %></code>
+                        </td>
                         <td><span class="badge bg-info"><%= booking.seats %> seat(s)</span></td>
                         <td>
                           <% if (booking.status === 'confirmed') { %>
@@ -381,22 +384,10 @@
                           <% } %>
                         </td>
                         <td><small><%= new Date(booking.createdAt).toLocaleDateString() %></small></td>
-                        <td>
-                          <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-primary btn-sm" title="View Details">
-                              <i class="bi bi-eye"></i>
-                            </button>
-                            <% if (booking.status === 'confirmed') { %>
-                              <button class="btn btn-outline-danger btn-sm" title="Cancel Booking"
-                                      onclick="cancelBooking('<%= booking._id %>')">
-                                <i class="bi bi-x-circle"></i>
-                              </button>
-                            <% } %>
-                          </div>
-                        </td>
+                        <!-- Actions removed for recent bookings preview -->
                       </tr>
                     <% }); %>
-                  <% } else { %>
+                    <% } else { %>
                     <tr>
                       <td colspan="7" class="text-center py-4 text-muted">
                         <i class="bi bi-inbox"></i> No recent bookings found
@@ -579,6 +570,7 @@
             routeHtml = `<td><strong>${escapeHtml(booking.schedule.route.routeNumber || '')}</strong><br><small class="text-muted">${escapeHtml(booking.schedule.route.origin || '')} → ${escapeHtml(booking.schedule.route.destination || '')}</small></td>`;
           }
 
+          const scheduleIdCell = `<td><code>${escapeHtml((booking.schedule && booking.schedule.scheduleId) ? booking.schedule.scheduleId : (booking.schedule && booking.schedule._id ? booking.schedule._id.toString().slice(-8) : ''))}</code></td>`;
           const seatsCell = `<td><span class="badge bg-info">${booking.seats || 1} seat(s)</span></td>`;
 
           let statusBadge = `<span class="status-badge status-pending">${escapeHtml(booking.status || 'pending')}</span>`;
@@ -588,9 +580,8 @@
           const statusCell = `<td>${statusBadge}</td>`;
           const dateCell = `<td><small>${new Date(booking.createdAt).toLocaleDateString()}</small></td>`;
 
-          const actionsCell = `<td><div class="btn-group btn-group-sm"><button class="btn btn-outline-primary btn-sm" title="View Details"><i class="bi bi-eye"></i></button>${booking.status === 'confirmed' ? `<button class="btn btn-outline-danger btn-sm" title="Cancel Booking" onclick="cancelBooking('${booking._id}')"><i class="bi bi-x-circle"></i></button>` : ''}</div></td>`;
-
-          tr.innerHTML = idCell + customerCell + routeHtml + seatsCell + statusCell + dateCell + actionsCell;
+          // build row without actions (recent preview)
+          tr.innerHTML = idCell + customerCell + routeHtml + scheduleIdCell + seatsCell + statusCell + dateCell;
 
           // Prepend new booking to top of list
           if (tbody.firstChild) tbody.insertBefore(tr, tbody.firstChild);
