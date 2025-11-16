@@ -1,10 +1,11 @@
 const express = require('express');
 const bookingController = require('../controllers/bookingController');
+const { bookingLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
-// Create a new booking
-router.post('/', bookingController.createBooking.bind(bookingController));
+// Create a new booking with rate limiting
+router.post('/', bookingLimiter, bookingController.createBooking.bind(bookingController));
 
 // Get all bookings
 router.get('/', bookingController.getAllBookings.bind(bookingController));

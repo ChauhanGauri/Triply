@@ -1,4 +1,6 @@
 const { Server } = require('socket.io');
+const { createAdapter } = require('@socket.io/redis-adapter');
+const { getRedisClient } = require('./redis');
 
 let ioInstance = null;
 
@@ -10,6 +12,26 @@ function initSocket(server) {
       origin: '*'
     }
   });
+
+  // Use Redis adapter for scaling across multiple servers
+  (async () => {
+    try {
+      // Wait a bit to ensure Redis is connected
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      const client = getRedisClient();
+      if (client && client.isReady) {
+        const pubClient = client.duplicate();
+        const subClient = client.duplicate();
+        
+        await pubClient.connect();
+        await subClient.connect();
+        ioInstance.adapter(createAdapter(pubClient, subClient));
+        console.log('✅ Socket.io Redis adapter initialized');
+      }
+    } catch (error) {
+      console.warn('⚠️ Socket.io Redis adapter not available, using default adapter:', error.message);
+    }
+  })();
 
   ioInstance.on('connection', (socket) => {
     console.log('🟢 Socket connected:', socket.id);

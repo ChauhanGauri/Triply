@@ -225,6 +225,7 @@
               <thead>
                 <tr>
                     <th>Route</th>
+                    <th>Schedule ID</th>
                     <th>Journey Date</th>
                     <th>Bus Number</th>
                     <th>Driver</th>
@@ -245,6 +246,9 @@
                             <em class="text-muted">Route not found</em><br>
                             <small class="text-warning">⚠️ Invalid route reference</small>
                           <% } %>
+                        </td>
+                        <td>
+                          <code><%= schedule.scheduleId || (schedule._id ? schedule._id.toString().slice(-8) : '') %></code>
                         </td>
                         <td>
                           <i class="bi bi-calendar3"></i> <%= schedule.journeyDate ? new Date(schedule.journeyDate).toLocaleDateString() : '<em class="text-muted">Not set</em>' %>
@@ -276,9 +280,9 @@
                         </td>
                       </tr>
                     <% }) %>
-                  <% } else { %>
+                    <% } else { %>
                     <tr>
-                      <td colspan="7" class="text-center py-4">
+                      <td colspan="8" class="text-center py-4">
                         <div class="text-muted">
                           <i class="bi bi-calendar-event fs-1"></i>
                           <p class="mt-2">No schedules found. <a href="/admin/schedules/new">Add your first schedule</a>.</p>

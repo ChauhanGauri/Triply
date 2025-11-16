@@ -225,12 +225,11 @@
             <div class="table-responsive">
               <table class="table table-hover">
                 <thead>
-                  <tr>
+                    <tr>
                     <th>User</th>
                     <th>Route</th>
-                    <th>Schedule</th>
+                    <th>Schedule ID</th>
                     <th>Status</th>
-                    <th>Booked At</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -246,7 +245,7 @@
                           </small>
                         </td>
                         <td>
-                          <%= booking.schedule ? new Date(booking.schedule.departureTime).toLocaleString() : 'N/A' %>
+                          <code><%= booking.schedule && booking.schedule.scheduleId ? booking.schedule.scheduleId : (booking.schedule && booking.schedule._id ? booking.schedule._id.toString().slice(-8) : 'N/A') %></code>
                         </td>
                         <td>
                           <% if (booking.status === 'confirmed') { %>
@@ -257,7 +256,6 @@
                             <span class="status-badge status-pending"><%= booking.status %></span>
                           <% } %>
                         </td>
-                        <td><%= new Date(booking.createdAt).toLocaleString() %></td>
                         <td>
                           <div class="btn-group btn-group-sm" role="group">
                             <button type="button" class="btn btn-outline-primary" onclick="viewBookingDetails('<%= booking._id %>')">
@@ -277,7 +275,7 @@
                     <% }) %>
                   <% } else { %>
                     <tr>
-                      <td colspan="6" class="text-center py-4">
+                      <td colspan="5" class="text-center py-4">
                         <div class="text-muted">
                           <i class="bi bi-journal-bookmark fs-1"></i>
                           <p class="mt-2">No bookings found.</p>
@@ -520,7 +518,7 @@
               </tr>
               <tr>
                 <td><strong>Driver:</strong></td>
-                <td>${booking.schedule.driver || 'N/A'}</td>
+                <td>${booking.schedule.driverName || booking.schedule.driver || 'N/A'}</td>
               </tr>
               <tr>
                 <td><strong>Fare:</strong></td>
@@ -549,10 +547,6 @@
               <tr>
                 <td><strong>Email:</strong></td>
                 <td>${user.email}</td>
-              </tr>
-              <tr>
-                <td><strong>Role:</strong></td>
-                <td><span class="badge bg-info">${user.role}</span></td>
               </tr>
               <tr>
                 <td><strong>Joined:</strong></td>
@@ -594,18 +588,17 @@
             routeHtml = `<td>${escapeHtml(booking.schedule.route.routeNumber || '')}<br><small class="text-muted">${escapeHtml(booking.schedule.route.origin || '')} → ${escapeHtml(booking.schedule.route.destination || '')}</small></td>`;
           }
 
-          const scheduleCell = `<td>${booking.schedule && booking.schedule.departureTime ? new Date(booking.schedule.departureTime).toLocaleString() : 'N/A'}</td>`;
+          const scheduleIdCell = `<td><code>${escapeHtml((booking.schedule && booking.schedule.scheduleId) ? booking.schedule.scheduleId : (booking.schedule && booking.schedule._id ? booking.schedule._id.toString().slice(-8) : 'N/A'))}</code></td>`;
 
           let statusBadge = `<span class="status-badge status-pending">${escapeHtml(booking.status || 'pending')}</span>`;
           if (booking.status === 'confirmed') statusBadge = '<span class="status-badge status-confirmed">Confirmed</span>';
           if (booking.status === 'cancelled') statusBadge = '<span class="status-badge status-cancelled">Cancelled</span>';
 
           const statusCell = `<td>${statusBadge}</td>`;
-          const dateCell = `<td>${new Date(booking.createdAt).toLocaleString()}</td>`;
 
           const actionsCell = `<td><div class="btn-group btn-group-sm" role="group"><button type="button" class="btn btn-outline-primary" onclick="viewBookingDetails('${booking._id}')"><i class="bi bi-eye"></i> View Details</button><button type="button" class="btn btn-outline-info" onclick="viewCustomerProfile('${booking.user ? booking.user._id : ''}')"><i class="bi bi-person"></i> Customer</button>${booking.status === 'confirmed' ? `<button type="button" class="btn btn-outline-danger" onclick="cancelBooking('${booking._id}')"><i class="bi bi-x-circle"></i> Cancel</button>` : ''}</div></td>`;
 
-          tr.innerHTML = userCell + routeHtml + scheduleCell + statusCell + dateCell + actionsCell;
+          tr.innerHTML = userCell + routeHtml + scheduleIdCell + statusCell + actionsCell;
 
           if (tbody.firstChild) tbody.insertBefore(tr, tbody.firstChild);
           else tbody.appendChild(tr);

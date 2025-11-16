@@ -1,4 +1,5 @@
 const Route = require('../models/Route');
+const cache = require('../utils/cache');
 
 class RouteController {
     async createRoute(req, res) {
@@ -14,6 +15,10 @@ class RouteController {
             
             const newRoute = new Route(req.body);
             await newRoute.save();
+            
+            // Invalidate cache when route is created
+            await cache.deletePattern('routes:*');
+            await cache.deletePattern('dashboard:*');
             
             console.log('Route created successfully:', newRoute.routeNumber);
             
@@ -64,7 +69,16 @@ class RouteController {
 
     async getAllRoutes(req, res) {
         try {
-            const routes = await Route.find();
+            const cacheKey = 'routes:all';
+            
+            const routes = await cache.getOrSet(
+                cacheKey,
+                async () => {
+                    return await Route.find();
+                },
+                600 // Cache for 10 minutes
+            );
+
             res.status(200).json({ 
                 message: "Routes retrieved successfully", 
                 data: routes 
@@ -80,10 +94,20 @@ class RouteController {
     async getRouteById(req, res) {
         try {
             const { id } = req.params;
-            const route = await Route.findById(id);
+            const cacheKey = `route:${id}`;
+            
+            const route = await cache.getOrSet(
+                cacheKey,
+                async () => {
+                    return await Route.findById(id);
+                },
+                600 // Cache for 10 minutes
+            );
+            
             if (!route) {
                 return res.status(404).json({ message: "Route not found" });
             }
+            
             res.status(200).json({ 
                 message: "Route retrieved successfully", 
                 data: route 
@@ -120,6 +144,11 @@ class RouteController {
                     return res.redirect('/admin/routes?error=Route not found');
                 }
             }
+            
+            // Invalidate cache when route is updated
+            await cache.deletePattern('routes:*');
+            await cache.delete(`route:${id}`);
+            await cache.deletePattern('dashboard:*');
             
             // Check if this is an API request or web request
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
@@ -173,6 +202,11 @@ class RouteController {
                     return res.redirect('/admin/routes?error=Route not found');
                 }
             }
+            
+            // Invalidate cache when route is deleted
+            await cache.deletePattern('routes:*');
+            await cache.delete(`route:${id}`);
+            await cache.deletePattern('dashboard:*');
             
             // Check if this is an API request or web request
             if (req.headers.accept && req.headers.accept.includes('application/json')) {

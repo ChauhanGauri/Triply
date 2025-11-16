@@ -55,10 +55,16 @@ A comprehensive Node.js/Express application for managing public transport operat
 3. **Environment Setup**
    ```bash
    cp .env.example .env
-   # Edit .env with your MongoDB URI and session secret
+   # Edit .env with your MongoDB URI, session secret, and Redis URL (optional)
    ```
 
-4. **Start the application**
+4. **Setup Redis (Optional but Recommended)**
+   - **Redis Cloud (Recommended)**: Free tier available - See [Redis Cloud Setup Guide](docs/REDIS-CLOUD-SETUP.md)
+   - **Local Development**: Install Redis locally or use Docker: `docker run -d -p 6379:6379 redis`
+   - See [Redis Setup Guide](docs/REDIS-SETUP.md) for general Redis setup
+   - Application will automatically fallback to MongoDB if Redis is unavailable
+
+5. **Start the application**
    ```bash
    # Development mode with auto-reload
    npm run dev
@@ -67,7 +73,7 @@ A comprehensive Node.js/Express application for managing public transport operat
    npm start
    ```
 
-5. **Access the application**
+6. **Access the application**
    - Application: http://localhost:3000
    - Admin Login: Use `/auth/create-admin` to create initial admin
    - User Registration: Available on home page
@@ -83,7 +89,10 @@ A comprehensive Node.js/Express application for managing public transport operat
 
 - **Backend**: Node.js, Express.js
 - **Database**: MongoDB with Mongoose ODM
-- **Authentication**: express-session with MongoDB storage
+- **Cache/Sessions**: Redis (with MongoDB fallback)
+- **Authentication**: express-session with Redis/MongoDB storage
+- **Rate Limiting**: express-rate-limit with Redis backend
+- **Real-time**: Socket.io with Redis adapter
 - **Templating**: EJS (Embedded JavaScript)
 - **UI Framework**: Bootstrap 5 + Bootstrap Icons
 - **Password Security**: bcryptjs with salt rounds
