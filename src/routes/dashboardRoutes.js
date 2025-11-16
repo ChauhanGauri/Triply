@@ -5,6 +5,7 @@ const routeController = require('../controllers/routeController');
 const scheduleController = require('../controllers/scheduleController');
 const userController = require('../controllers/userController');
 const { isAuthenticated, isAdmin, isUser, apiAuth, apiAdminAuth } = require('../middleware/auth');
+const { getRedisClient } = require('../config/redis');
 
 const router = express.Router();
 
@@ -71,6 +72,19 @@ router.get('/api/stats', apiAuth, apiAdminAuth, dashboardController.getBookingSt
 router.get('/api/bookings/user/:userId', apiAuth, bookingController.getUserBookings);
 router.patch('/api/bookings/:id/cancel', apiAuth, bookingController.cancelBookingWithSeats);
 router.get('/api/bookings/statistics', apiAuth, apiAdminAuth, bookingController.getBookingStatistics);
+
+// Admin utility route - Clear Redis cache (for testing)
+router.get('/admin/clear-cache', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+        const client = getRedisClient();
+        await client.flushAll();
+        console.log('🗑️ Redis cache cleared by admin');
+        res.send("✅ Redis cache cleared!");
+    } catch (error) {
+        console.error('❌ Error clearing Redis cache:', error);
+        res.status(500).send("❌ Error clearing cache: " + error.message);
+    }
+});
 
 // Legacy route - redirect to admin dashboard
 router.get('/', dashboardController.getAdminDashboard);

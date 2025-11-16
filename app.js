@@ -6,6 +6,8 @@ const { initSocket } = require('./src/config/socket');
 const mongoose = require("mongoose");
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
+const { RedisStore } = require('connect-redis');
+const { connectRedis, getRedisClient, isRedisReady } = require('./src/config/redis');
 const methodOverride = require("method-override");
 const path = require("path");
 
@@ -17,14 +19,45 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method')); // Enable method override for PUT/DELETE from forms
 app.use(express.static(path.join(__dirname, "public"))); // serve CSS/JS/images
 
-// Session configuration
+// Initialize Redis connection and session store
+let sessionStore;
+let redisInitialized = false;
+
+async function initializeRedisAndStartServer() {
+  try {
+    // Try to connect to Redis first (this now waits for ready event)
+    await connectRedis();
+    
+    // Redis is now ready, use it for session storage
+    const client = getRedisClient();
+    
+    if (!client || !client.isReady) {
+      throw new Error('Redis client not ready after connection');
+    }
+    
+    sessionStore = new RedisStore({
+      client: client,
+      prefix: 'sess:',
+    });
+    console.log('✅ Using Redis for session storage');
+    redisInitialized = true;
+  } catch (error) {
+    // Fallback to MongoDB for sessions
+    console.warn('⚠️ Redis not available, using MongoDB for sessions');
+    if (error.message) {
+      console.warn('   Error:', error.message);
+    }
+    sessionStore = MongoStore.create({
+      mongoUrl: process.env.MONGO_URI || 'mongodb://localhost:27017/transport-management'
+    });
+  }
+
+  // Session configuration (after Redis connection attempt)
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: process.env.MONGO_URI || 'mongodb://localhost:27017/transport-management'
-  }),
+    store: sessionStore,
   cookie: {
     secure: false, // Set to true in production with HTTPS
     httpOnly: true,
@@ -116,9 +149,16 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
 
-// initialize socket.io
+  // initialize socket.io (after Redis connection)
 initSocket(server);
 
 server.listen(PORT, () => {
   console.log(`✅ Server is running on port ${PORT}`);
+  });
+}
+
+// Initialize Redis and start server
+initializeRedisAndStartServer().catch((error) => {
+  console.error('❌ Failed to initialize application:', error);
+  process.exit(1);
 });

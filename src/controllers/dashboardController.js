@@ -2,39 +2,48 @@ const Booking = require('../models/Booking');
 const User = require('../models/User');
 const Route = require('../models/Route');
 const Schedule = require('../models/Schedule');
+const cache = require('../utils/cache');
 
 class DashboardController {
     // Admin Dashboard - Get comprehensive statistics and data
     async getAdminDashboard(req, res) {
         try {
+            // Cache key for dashboard statistics
+            const statsCacheKey = 'dashboard:admin:stats';
+            
+            // Try to get statistics from cache, or fetch from database
+            const stats = await cache.getOrSet(
+                statsCacheKey,
+                async () => {
             // Get counts for dashboard statistics
             const totalBookings = await Booking.countDocuments();
             const totalUsers = await User.countDocuments();
             const totalRoutes = await Route.countDocuments();
             const totalSchedules = await Schedule.countDocuments();
-            
-            // Get recent bookings with populated data
-            const recentBookings = await Booking.find()
-                .populate('user', 'name email')
-                .populate({
-                    path: 'schedule',
-                    populate: {
-                        path: 'route',
-                        select: 'routeNumber origin destination'
-                    }
-                })
-                .sort({ createdAt: -1 })
-                .limit(10);
-
-            // Get booking status statistics
             const confirmedBookings = await Booking.countDocuments({ status: 'confirmed' });
             const cancelledBookings = await Booking.countDocuments({ status: 'cancelled' });
 
-            // Get monthly booking statistics (last 6 months)
+                    return {
+                        totalBookings,
+                        totalUsers,
+                        totalRoutes,
+                        totalSchedules,
+                        confirmedBookings,
+                        cancelledBookings
+                    };
+                },
+                300 // Cache for 5 minutes
+            );
+            
+            // Cache monthly bookings (they change less frequently)
+            const monthlyCacheKey = 'dashboard:admin:monthly';
             const sixMonthsAgo = new Date();
             sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
             
-            const monthlyBookings = await Booking.aggregate([
+            const monthlyBookings = await cache.getOrSet(
+                monthlyCacheKey,
+                async () => {
+                    return await Booking.aggregate([
                 {
                     $match: {
                         createdAt: { $gte: sixMonthsAgo }
@@ -53,19 +62,35 @@ class DashboardController {
                     $sort: { "_id.year": 1, "_id.month": 1 }
                 }
             ]);
+                },
+                600 // Cache for 10 minutes
+            );
 
-            // Get all routes for admin management
-            const routes = await Route.find().sort({ routeNumber: 1 });
+            // Cache routes list
+            const routesCacheKey = 'routes:all:sorted';
+            const routes = await cache.getOrSet(
+                routesCacheKey,
+                async () => {
+                    return await Route.find().sort({ routeNumber: 1 });
+                },
+                600 // Cache for 10 minutes
+            );
+            
+            // Get recent bookings with populated data (don't cache - always fresh)
+            const recentBookings = await Booking.find()
+                .populate('user', 'name email')
+                .populate({
+                    path: 'schedule',
+                    populate: {
+                        path: 'route',
+                        select: 'routeNumber origin destination'
+                    }
+                })
+                .sort({ createdAt: -1 })
+                .limit(10);
 
             const dashboardData = {
-                stats: {
-                    totalBookings,
-                    totalUsers,
-                    totalRoutes,
-                    totalSchedules,
-                    confirmedBookings,
-                    cancelledBookings
-                },
+                stats: stats,
                 recentBookings,
                 monthlyBookings,
                 routes

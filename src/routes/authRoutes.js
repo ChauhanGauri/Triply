@@ -1,6 +1,7 @@
 const express = require('express');
 const authController = require('../controllers/authController');
 const { redirectIfLoggedIn } = require('../middleware/auth');
+const { loginLimiter, registerLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
@@ -8,12 +9,12 @@ const router = express.Router();
 router.get('/admin/login', redirectIfLoggedIn, authController.renderAdminLogin);
 router.get('/user/login', redirectIfLoggedIn, authController.renderUserLogin);
 
-// Login process routes
-router.post('/admin/login', authController.adminLogin);
-router.post('/user/login', authController.userLogin);
+// Login process routes with rate limiting
+router.post('/admin/login', loginLimiter, authController.adminLogin);
+router.post('/user/login', loginLimiter, authController.userLogin);
 
-// Registration route (for creating users)
-router.post('/register', authController.register);
+// Registration route with rate limiting
+router.post('/register', registerLimiter, authController.register);
 
 // Logout route
 router.post('/logout', authController.logout);
