@@ -345,6 +345,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/localStorage.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       // Load selected schedule data
@@ -371,10 +372,11 @@
       const passengerCountSelect = document.getElementById('passengerCount');
       const passengersContainer = document.getElementById('passengersContainer');
 
-      function generatePassengerForms(count) {
+      function generatePassengerForms(count, savedData = null) {
         passengersContainer.innerHTML = '';
         
         for (let i = 1; i <= count; i++) {
+          const savedPassenger = savedData && savedData.passengers && savedData.passengers[i - 1] ? savedData.passengers[i - 1] : null;
           const passengerHtml = `
             <div class="passenger-card p-3 mb-3">
               <h6 class="mb-3">
@@ -384,20 +386,20 @@
                 <div class="col-md-6 mb-3">
                   <label class="form-label">Full Name *</label>
                   <input type="text" class="form-control" name="passengers[${i-1}][name]" 
-                         placeholder="Enter full name" required>
+                         placeholder="Enter full name" value="${savedPassenger ? (savedPassenger.name || '') : ''}" required>
                 </div>
                 <div class="col-md-3 mb-3">
                   <label class="form-label">Age *</label>
                   <input type="number" class="form-control" name="passengers[${i-1}][age]" 
-                         min="1" max="120" required>
+                         min="1" max="120" value="${savedPassenger ? (savedPassenger.age || '') : ''}" required>
                 </div>
                 <div class="col-md-3 mb-3">
                   <label class="form-label">Gender *</label>
                   <select class="form-select" name="passengers[${i-1}][gender]" required>
                     <option value="">Select</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
+                    <option value="Male" ${savedPassenger && savedPassenger.gender === 'Male' ? 'selected' : ''}>Male</option>
+                    <option value="Female" ${savedPassenger && savedPassenger.gender === 'Female' ? 'selected' : ''}>Female</option>
+                    <option value="Other" ${savedPassenger && savedPassenger.gender === 'Other' ? 'selected' : ''}>Other</option>
                   </select>
                 </div>
               </div>
@@ -405,6 +407,9 @@
           `;
           passengersContainer.insertAdjacentHTML('beforeend', passengerHtml);
         }
+        
+        // Attach auto-save listeners to all form inputs
+        attachAutoSaveListeners();
       }
 
       function calculateTotalPrice() {
@@ -425,15 +430,75 @@
       }
 
       passengerCountSelect.addEventListener('change', function() {
-        generatePassengerForms(parseInt(this.value));
+        const savedData = LocalStorageManager.getBookingFormDraft();
+        generatePassengerForms(parseInt(this.value), savedData);
         calculateTotalPrice();
+        saveFormDraft(); // Save after passenger count change
       });
 
+      // Load saved form draft from localStorage
+      const savedFormData = LocalStorageManager.getBookingFormDraft();
+      const initialPassengerCount = savedFormData && savedFormData.passengerCount ? savedFormData.passengerCount : 1;
+      
       // Initialize
-      generatePassengerForms(1);
+      if (savedFormData && savedFormData.passengerCount) {
+        passengerCountSelect.value = savedFormData.passengerCount;
+      }
+      generatePassengerForms(initialPassengerCount, savedFormData);
       calculateTotalPrice();
 
-      // Form validation
+      // Auto-save form data
+      function saveFormDraft() {
+        const formData = {
+          passengerCount: parseInt(passengerCountSelect.value),
+          passengers: []
+        };
+        
+        // Collect passenger data
+        const passengerInputs = document.querySelectorAll('[name^="passengers["]');
+        const passengerCount = parseInt(passengerCountSelect.value);
+        
+        for (let i = 0; i < passengerCount; i++) {
+          const nameInput = document.querySelector(`input[name="passengers[${i}][name]"]`);
+          const ageInput = document.querySelector(`input[name="passengers[${i}][age]"]`);
+          const genderSelect = document.querySelector(`select[name="passengers[${i}][gender]"]`);
+          
+          if (nameInput || ageInput || genderSelect) {
+            formData.passengers.push({
+              name: nameInput ? nameInput.value : '',
+              age: ageInput ? ageInput.value : '',
+              gender: genderSelect ? genderSelect.value : ''
+            });
+          }
+        }
+        
+        // Only save if there's actual data
+        if (formData.passengers.some(p => p.name || p.age || p.gender)) {
+          LocalStorageManager.saveBookingFormDraft(formData);
+        }
+      }
+
+      // Attach auto-save listeners to form inputs
+      function attachAutoSaveListeners() {
+        // Use debouncing to avoid too frequent saves
+        let saveTimeout;
+        const debouncedSave = () => {
+          clearTimeout(saveTimeout);
+          saveTimeout = setTimeout(saveFormDraft, 1000); // Save after 1 second of inactivity
+        };
+        
+        // Attach to all form inputs
+        const formInputs = document.querySelectorAll('#bookingForm input, #bookingForm select');
+        formInputs.forEach(input => {
+          input.addEventListener('input', debouncedSave);
+          input.addEventListener('change', debouncedSave);
+        });
+      }
+      
+      // Initial attachment
+      attachAutoSaveListeners();
+
+      // Form validation and clear draft on successful submission
       document.getElementById('bookingForm').addEventListener('submit', function(e) {
         const passengers = document.querySelectorAll('input[name*="[name]"]');
         let allValid = true;
@@ -450,6 +515,9 @@
         if (!allValid) {
           e.preventDefault();
           alert('Please fill in all passenger details.');
+        } else {
+          // Clear saved form draft on successful submission
+          LocalStorageManager.clearBookingFormDraft();
         }
       });
     });
