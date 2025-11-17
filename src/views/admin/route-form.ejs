@@ -240,13 +240,17 @@
                   <div class="row">
                     <div class="col-md-6 mb-3">
                       <label for="origin" class="form-label">Origin *</label>
-                      <input type="text" class="form-control" id="origin" name="origin"
-                             value="<%= route ? route.origin : '' %>" required>
+                      <select class="form-control" id="origin" name="origin" required>
+                        <option value="">Select Origin</option>
+                      </select>
+                      <small class="form-text text-muted">Select starting point</small>
                     </div>
                     <div class="col-md-6 mb-3">
                       <label for="destination" class="form-label">Destination *</label>
-                      <input type="text" class="form-control" id="destination" name="destination"
-                             value="<%= route ? route.destination : '' %>" required>
+                      <select class="form-control" id="destination" name="destination" required>
+                        <option value="">Select Destination</option>
+                      </select>
+                      <small class="form-text text-muted">Valid destinations will be shown based on origin</small>
                     </div>
                   </div>
 
@@ -254,12 +258,14 @@
                     <div class="col-md-6 mb-3">
                       <label for="distance" class="form-label">Distance (km) *</label>
                       <input type="number" class="form-control" id="distance" name="distance" step="0.1" min="0"
-                             value="<%= route ? route.distance : '' %>" required>
+                             value="<%= route ? route.distance : '' %>" readonly required>
+                      <small class="form-text text-muted">Auto-calculated based on origin and destination</small>
                     </div>
                     <div class="col-md-6 mb-3">
                       <label for="duration" class="form-label">Duration (minutes) *</label>
                       <input type="number" class="form-control" id="duration" name="duration" min="1"
-                             value="<%= route ? route.duration : '' %>" required>
+                             value="<%= route ? route.duration : '' %>" readonly required>
+                      <small class="form-text text-muted">Auto-calculated (avg 50 km/hr)</small>
                     </div>
                   </div>
 
@@ -297,5 +303,390 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    // Major Indian cities with their states and approximate distances
+    const cities = [
+      // North India
+      { name: 'Delhi', state: 'Delhi', region: 'North' },
+      { name: 'Chandigarh', state: 'Chandigarh', region: 'North' },
+      { name: 'Amritsar', state: 'Punjab', region: 'North' },
+      { name: 'Ludhiana', state: 'Punjab', region: 'North' },
+      { name: 'Jalandhar', state: 'Punjab', region: 'North' },
+      { name: 'Shimla', state: 'Himachal Pradesh', region: 'North' },
+      { name: 'Manali', state: 'Himachal Pradesh', region: 'North' },
+      { name: 'Dehradun', state: 'Uttarakhand', region: 'North' },
+      { name: 'Haridwar', state: 'Uttarakhand', region: 'North' },
+      { name: 'Jaipur', state: 'Rajasthan', region: 'North' },
+      { name: 'Udaipur', state: 'Rajasthan', region: 'North' },
+      { name: 'Jodhpur', state: 'Rajasthan', region: 'North' },
+      { name: 'Agra', state: 'Uttar Pradesh', region: 'North' },
+      { name: 'Lucknow', state: 'Uttar Pradesh', region: 'North' },
+      { name: 'Varanasi', state: 'Uttar Pradesh', region: 'North' },
+      { name: 'Kanpur', state: 'Uttar Pradesh', region: 'North' },
+      
+      // West India
+      { name: 'Mumbai', state: 'Maharashtra', region: 'West' },
+      { name: 'Pune', state: 'Maharashtra', region: 'West' },
+      { name: 'Nagpur', state: 'Maharashtra', region: 'West' },
+      { name: 'Ahmedabad', state: 'Gujarat', region: 'West' },
+      { name: 'Surat', state: 'Gujarat', region: 'West' },
+      { name: 'Vadodara', state: 'Gujarat', region: 'West' },
+      { name: 'Goa', state: 'Goa', region: 'West' },
+      
+      // South India
+      { name: 'Bangalore', state: 'Karnataka', region: 'South' },
+      { name: 'Mysore', state: 'Karnataka', region: 'South' },
+      { name: 'Mangalore', state: 'Karnataka', region: 'South' },
+      { name: 'Chennai', state: 'Tamil Nadu', region: 'South' },
+      { name: 'Coimbatore', state: 'Tamil Nadu', region: 'South' },
+      { name: 'Madurai', state: 'Tamil Nadu', region: 'South' },
+      { name: 'Hyderabad', state: 'Telangana', region: 'South' },
+      { name: 'Vijayawada', state: 'Andhra Pradesh', region: 'South' },
+      { name: 'Visakhapatnam', state: 'Andhra Pradesh', region: 'South' },
+      { name: 'Kochi', state: 'Kerala', region: 'South' },
+      { name: 'Thiruvananthapuram', state: 'Kerala', region: 'South' },
+      { name: 'Kozhikode', state: 'Kerala', region: 'South' },
+      
+      // East India
+      { name: 'Kolkata', state: 'West Bengal', region: 'East' },
+      { name: 'Patna', state: 'Bihar', region: 'East' },
+      { name: 'Ranchi', state: 'Jharkhand', region: 'East' },
+      { name: 'Bhubaneswar', state: 'Odisha', region: 'East' },
+      { name: 'Guwahati', state: 'Assam', region: 'East' }
+    ];
+
+    // Distance matrix (approximate distances in km between major cities)
+    const distanceMatrix = {
+      'Chandigarh': {
+        'Delhi': 250, 'Amritsar': 230, 'Ludhiana': 110, 'Jalandhar': 145,
+        'Shimla': 120, 'Manali': 310, 'Dehradun': 170, 'Haridwar': 210,
+        'Jaipur': 520, 'Agra': 450
+      },
+      'Delhi': {
+        'Chandigarh': 250, 'Amritsar': 450, 'Ludhiana': 340, 'Jalandhar': 380,
+        'Shimla': 350, 'Manali': 540, 'Dehradun': 250, 'Haridwar': 220,
+        'Jaipur': 280, 'Udaipur': 660, 'Jodhpur': 590, 'Agra': 210,
+        'Lucknow': 550, 'Varanasi': 820, 'Kanpur': 460, 'Mumbai': 1420,
+        'Ahmedabad': 940, 'Bangalore': 2150, 'Chennai': 2180, 'Hyderabad': 1570,
+        'Kolkata': 1480, 'Guwahati': 1990
+      },
+      'Amritsar': {
+        'Chandigarh': 230, 'Delhi': 450, 'Ludhiana': 140, 'Jalandhar': 85,
+        'Shimla': 340, 'Manali': 460
+      },
+      'Ludhiana': {
+        'Chandigarh': 110, 'Delhi': 340, 'Amritsar': 140, 'Jalandhar': 70,
+        'Shimla': 230
+      },
+      'Jalandhar': {
+        'Chandigarh': 145, 'Delhi': 380, 'Amritsar': 85, 'Ludhiana': 70,
+        'Shimla': 270
+      },
+      'Shimla': {
+        'Chandigarh': 120, 'Delhi': 350, 'Manali': 250, 'Dehradun': 240
+      },
+      'Manali': {
+        'Chandigarh': 310, 'Delhi': 540, 'Shimla': 250
+      },
+      'Dehradun': {
+        'Chandigarh': 170, 'Delhi': 250, 'Haridwar': 55, 'Shimla': 240
+      },
+      'Haridwar': {
+        'Chandigarh': 210, 'Delhi': 220, 'Dehradun': 55
+      },
+      'Jaipur': {
+        'Chandigarh': 520, 'Delhi': 280, 'Udaipur': 400, 'Jodhpur': 340,
+        'Agra': 240, 'Ahmedabad': 680, 'Mumbai': 1140
+      },
+      'Udaipur': {
+        'Delhi': 660, 'Jaipur': 400, 'Jodhpur': 260, 'Ahmedabad': 260,
+        'Mumbai': 750
+      },
+      'Jodhpur': {
+        'Delhi': 590, 'Jaipur': 340, 'Udaipur': 260, 'Ahmedabad': 480
+      },
+      'Agra': {
+        'Chandigarh': 450, 'Delhi': 210, 'Jaipur': 240, 'Lucknow': 370,
+        'Kanpur': 290
+      },
+      'Lucknow': {
+        'Delhi': 550, 'Agra': 370, 'Varanasi': 320, 'Kanpur': 85
+      },
+      'Varanasi': {
+        'Delhi': 820, 'Lucknow': 320, 'Kolkata': 680, 'Patna': 250
+      },
+      'Kanpur': {
+        'Delhi': 460, 'Agra': 290, 'Lucknow': 85
+      },
+      'Mumbai': {
+        'Delhi': 1420, 'Pune': 150, 'Nagpur': 820, 'Ahmedabad': 530,
+        'Surat': 280, 'Vadodara': 430, 'Goa': 460, 'Bangalore': 980,
+        'Hyderabad': 710, 'Chennai': 1340, 'Jaipur': 1140, 'Udaipur': 750
+      },
+      'Pune': {
+        'Mumbai': 150, 'Nagpur': 720, 'Goa': 450, 'Bangalore': 840,
+        'Hyderabad': 560, 'Ahmedabad': 670
+      },
+      'Nagpur': {
+        'Mumbai': 820, 'Pune': 720, 'Hyderabad': 510, 'Bhopal': 350,
+        'Kolkata': 1150
+      },
+      'Ahmedabad': {
+        'Delhi': 940, 'Mumbai': 530, 'Pune': 670, 'Surat': 260,
+        'Vadodara': 110, 'Udaipur': 260, 'Jaipur': 680
+      },
+      'Surat': {
+        'Mumbai': 280, 'Ahmedabad': 260, 'Vadodara': 150
+      },
+      'Vadodara': {
+        'Mumbai': 430, 'Ahmedabad': 110, 'Surat': 150
+      },
+      'Goa': {
+        'Mumbai': 460, 'Pune': 450, 'Bangalore': 560, 'Mangalore': 350
+      },
+      'Bangalore': {
+        'Delhi': 2150, 'Mumbai': 980, 'Pune': 840, 'Goa': 560,
+        'Mysore': 145, 'Mangalore': 350, 'Chennai': 350, 'Coimbatore': 370,
+        'Hyderabad': 570, 'Kochi': 560
+      },
+      'Mysore': {
+        'Bangalore': 145, 'Mangalore': 270, 'Kochi': 480, 'Coimbatore': 280
+      },
+      'Mangalore': {
+        'Bangalore': 350, 'Mysore': 270, 'Goa': 350, 'Kochi': 450
+      },
+      'Chennai': {
+        'Delhi': 2180, 'Mumbai': 1340, 'Bangalore': 350, 'Coimbatore': 500,
+        'Madurai': 460, 'Hyderabad': 630, 'Vijayawada': 430,
+        'Visakhapatnam': 800, 'Kochi': 690, 'Kolkata': 1670
+      },
+      'Coimbatore': {
+        'Bangalore': 370, 'Chennai': 500, 'Mysore': 280, 'Madurai': 220,
+        'Kochi': 190
+      },
+      'Madurai': {
+        'Chennai': 460, 'Coimbatore': 220, 'Thiruvananthapuram': 280,
+        'Kochi': 270
+      },
+      'Hyderabad': {
+        'Delhi': 1570, 'Mumbai': 710, 'Pune': 560, 'Nagpur': 510,
+        'Bangalore': 570, 'Chennai': 630, 'Vijayawada': 270,
+        'Visakhapatnam': 620
+      },
+      'Vijayawada': {
+        'Hyderabad': 270, 'Chennai': 430, 'Visakhapatnam': 350
+      },
+      'Visakhapatnam': {
+        'Hyderabad': 620, 'Vijayawada': 350, 'Chennai': 800,
+        'Bhubaneswar': 440, 'Kolkata': 690
+      },
+      'Kochi': {
+        'Bangalore': 560, 'Mysore': 480, 'Mangalore': 450, 'Chennai': 690,
+        'Coimbatore': 190, 'Madurai': 270, 'Thiruvananthapuram': 210,
+        'Kozhikode': 190
+      },
+      'Thiruvananthapuram': {
+        'Kochi': 210, 'Madurai': 280, 'Kozhikode': 380
+      },
+      'Kozhikode': {
+        'Kochi': 190, 'Thiruvananthapuram': 380, 'Mangalore': 230,
+        'Bangalore': 400
+      },
+      'Kolkata': {
+        'Delhi': 1480, 'Varanasi': 680, 'Patna': 580, 'Ranchi': 420,
+        'Bhubaneswar': 450, 'Guwahati': 1010, 'Visakhapatnam': 690,
+        'Chennai': 1670, 'Nagpur': 1150
+      },
+      'Patna': {
+        'Delhi': 1000, 'Varanasi': 250, 'Kolkata': 580, 'Ranchi': 330
+      },
+      'Ranchi': {
+        'Kolkata': 420, 'Patna': 330, 'Bhubaneswar': 510
+      },
+      'Bhubaneswar': {
+        'Kolkata': 450, 'Ranchi': 510, 'Visakhapatnam': 440
+      },
+      'Guwahati': {
+        'Delhi': 1990, 'Kolkata': 1010
+      }
+    };
+
+    // Maximum practical bus travel distances (in km) from each city
+    const maxPracticalDistance = 1500; // Maximum distance a bus would typically travel
+
+    // Function to get distance between two cities
+    function getDistance(origin, destination) {
+      if (origin === destination) return 0;
+      
+      // Check direct route
+      if (distanceMatrix[origin] && distanceMatrix[origin][destination]) {
+        return distanceMatrix[origin][destination];
+      }
+      
+      // Check reverse route
+      if (distanceMatrix[destination] && distanceMatrix[destination][origin]) {
+        return distanceMatrix[destination][origin];
+      }
+      
+      return null;
+    }
+
+    // Function to calculate duration based on distance (avg speed 50 km/hr)
+    function calculateDuration(distance) {
+      const avgSpeed = 50; // km/hr
+      const hours = distance / avgSpeed;
+      return Math.round(hours * 60); // Convert to minutes
+    }
+
+    // Function to get valid destinations based on origin
+    function getValidDestinations(origin) {
+      if (!origin) return [];
+      
+      const validDestinations = [];
+      
+      cities.forEach(city => {
+        if (city.name !== origin) {
+          const distance = getDistance(origin, city.name);
+          if (distance !== null && distance <= maxPracticalDistance) {
+            validDestinations.push({
+              ...city,
+              distance: distance
+            });
+          }
+        }
+      });
+      
+      // Sort by distance
+      return validDestinations.sort((a, b) => a.distance - b.distance);
+    }
+
+    // Populate origin dropdown
+    function populateOrigin() {
+      const originSelect = document.getElementById('origin');
+      const currentOrigin = '<%= route ? route.origin : "" %>';
+      
+      // Group cities by region
+      const regions = {};
+      cities.forEach(city => {
+        if (!regions[city.region]) {
+          regions[city.region] = [];
+        }
+        regions[city.region].push(city);
+      });
+      
+      // Add cities grouped by region
+      Object.keys(regions).sort().forEach(region => {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = region + ' India';
+        
+        regions[region].sort((a, b) => a.name.localeCompare(b.name)).forEach(city => {
+          const option = document.createElement('option');
+          option.value = city.name;
+          option.textContent = `${city.name}, ${city.state}`;
+          if (currentOrigin === city.name) {
+            option.selected = true;
+          }
+          optgroup.appendChild(option);
+        });
+        
+        originSelect.appendChild(optgroup);
+      });
+    }
+
+    // Populate destination dropdown based on origin
+    function populateDestination(origin) {
+      const destinationSelect = document.getElementById('destination');
+      const currentDestination = '<%= route ? route.destination : "" %>';
+      
+      // Clear existing options except the first one
+      destinationSelect.innerHTML = '<option value="">Select Destination</option>';
+      
+      if (!origin) return;
+      
+      const validDestinations = getValidDestinations(origin);
+      
+      if (validDestinations.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No valid destinations found';
+        option.disabled = true;
+        destinationSelect.appendChild(option);
+        return;
+      }
+      
+      // Group by region
+      const regions = {};
+      validDestinations.forEach(city => {
+        if (!regions[city.region]) {
+          regions[city.region] = [];
+        }
+        regions[city.region].push(city);
+      });
+      
+      Object.keys(regions).sort().forEach(region => {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = region + ' India';
+        
+        regions[region].forEach(city => {
+          const option = document.createElement('option');
+          option.value = city.name;
+          option.textContent = `${city.name}, ${city.state} (${city.distance} km)`;
+          option.dataset.distance = city.distance;
+          if (currentDestination === city.name) {
+            option.selected = true;
+          }
+          optgroup.appendChild(option);
+        });
+        
+        destinationSelect.appendChild(optgroup);
+      });
+    }
+
+    // Update distance and duration when destination changes
+    function updateDistanceAndDuration() {
+      const origin = document.getElementById('origin').value;
+      const destinationSelect = document.getElementById('destination');
+      const destination = destinationSelect.value;
+      const distanceInput = document.getElementById('distance');
+      const durationInput = document.getElementById('duration');
+      
+      if (origin && destination) {
+        const selectedOption = destinationSelect.options[destinationSelect.selectedIndex];
+        const distance = parseFloat(selectedOption.dataset.distance);
+        
+        if (distance) {
+          distanceInput.value = distance;
+          const duration = calculateDuration(distance);
+          durationInput.value = duration;
+        }
+      } else {
+        distanceInput.value = '';
+        durationInput.value = '';
+      }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      populateOrigin();
+      
+      const originSelect = document.getElementById('origin');
+      const destinationSelect = document.getElementById('destination');
+      
+      // If editing existing route, populate destination
+      if (originSelect.value) {
+        populateDestination(originSelect.value);
+        updateDistanceAndDuration();
+      }
+      
+      // Event listeners
+      originSelect.addEventListener('change', function() {
+        populateDestination(this.value);
+        updateDistanceAndDuration();
+      });
+      
+      destinationSelect.addEventListener('change', updateDistanceAndDuration);
+    });
+  </script>
 </body>
 </html>
