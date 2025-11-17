@@ -22,6 +22,25 @@
       animation: slideIn 0.8s ease-out;
     }
 
+    /* Unified header classes (align with user dashboard) */
+    .user-header {
+      background: #1E293B;
+      color: white;
+      padding: 2rem 0;
+      border-radius: 20px 0 0 0;
+    }
+
+    .user-title {
+      background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 700;
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Legacy admin header (unused after unifying) kept for safety */
     .dashboard-header {
       background: #1E293B;
       color: white;
@@ -237,51 +256,13 @@
 </head>
 <body>
 
+  <!-- Unified Banner -->
+  <%- include('../partials/banner', { user: currentUser }) %>
+
   <div class="container-fluid p-0">
     <div class="row g-0 min-vh-100">
       <!-- Main Content -->
       <div class="col dashboard-container">
-
-        <!-- Header -->
-        <div class="dashboard-header">
-          <div class="container">
-            <div class="row align-items-center">
-              <div class="col">
-                <a href="/admin/dashboard" class="text-decoration-none">
-                  <h1 class="dashboard-title mb-1">
-                    <i class="bi bi-bus-front me-3"></i>
-                    Triply
-                  </h1>
-                </a>
-                <p class="mb-0 opacity-75">Admin Dashboard</p>
-              </div>
-              <div class="col-auto">
-                <div class="d-flex gap-2 flex-wrap">
-                  <a href="/admin/bookings" class="btn-custom">
-                    <i class="bi bi-ticket-detailed"></i>
-                    Bookings
-                  </a>
-                  <a href="/admin/routes" class="btn-custom">
-                    <i class="bi bi-map"></i>
-                    Routes
-                  </a>
-                  <a href="/admin/schedules" class="btn-custom">
-                    <i class="bi bi-calendar-event"></i>
-                    Schedules
-                  </a>
-                  <a href="/admin/users" class="btn-custom">
-                    <i class="bi bi-people"></i>
-                    Users
-                  </a>
-                  <a href="/auth/logout" class="btn-outline-custom">
-                    <i class="bi bi-box-arrow-right"></i>
-                    Logout
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <div class="container py-4">
 

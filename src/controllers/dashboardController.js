@@ -229,6 +229,89 @@ class DashboardController {
         }
     }
 
+    // Render user profile edit page
+    async getUserProfile(req, res) {
+        try {
+            // Allow optional :userId param (admins) otherwise use session user
+            const targetUserId = req.params.userId || req.session?.user?.id;
+            if (!targetUserId) return res.redirect('/auth/user/login');
+
+            const user = await User.findById(targetUserId);
+            if (!user) {
+                return res.status(404).render('error', {
+                    title: 'User Not Found',
+                    message: 'User not found',
+                    error: { status: 404, stack: '' }
+                });
+            }
+
+            res.render('user/profile', {
+                title: 'Edit Profile',
+                user,
+                success: req.query.success || null,
+                error: req.query.error || null
+            });
+        } catch (error) {
+            console.error('Error loading profile page:', error);
+            res.status(500).render('error', {
+                title: 'Error',
+                message: 'Error loading profile page',
+                error: error
+            });
+        }
+    }
+
+    // Handle user profile update
+    async updateUserProfile(req, res) {
+        try {
+            // Allow optional :userId param to edit other users (admins)
+            const targetUserId = req.params.userId || req.session?.user?.id;
+            if (!targetUserId) return res.redirect('/auth/user/login');
+
+            const { name, email, phone, password, confirmPassword } = req.body;
+
+            const user = await User.findById(targetUserId);
+            if (!user) return res.redirect(`/user/${targetUserId}/dashboard?error=User not found`);
+
+            // If email changed, ensure uniqueness
+            if (email && email !== user.email) {
+                const existing = await User.findOne({ email });
+                if (existing && existing._id.toString() !== targetUserId) {
+                    return res.redirect(`/user/${targetUserId}/profile?error=Email already in use`);
+                }
+            }
+
+            // Update fields
+            if (name) user.name = name;
+            if (email) user.email = email;
+            if (phone) user.phone = phone;
+
+            // Update password if provided
+            if (password) {
+                if (password !== confirmPassword) {
+                    return res.redirect(`/user/${targetUserId}/profile?error=Passwords do not match`);
+                }
+                user.password = password; // will be hashed by pre-save hook
+            }
+
+            await user.save();
+
+            // If the logged-in user updated their own profile, update session
+            if (req.session && req.session.user && req.session.user.id === targetUserId) {
+                req.session.user.name = user.name;
+                req.session.user.email = user.email;
+            }
+
+            // Redirect back to the profile page for the target user
+            const redirectPath = req.params.userId ? `/user/${targetUserId}/profile` : '/user/profile';
+            return res.redirect(`${redirectPath}?success=Profile updated successfully`);
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            const redirectPath = req.params.userId ? `/user/${req.params.userId}/profile` : '/user/profile';
+            return res.redirect(redirectPath + '?error=' + encodeURIComponent(error.message));
+        }
+    }
+
     // Get booking statistics for API endpoints
     async getBookingStats(req, res) {
         try {

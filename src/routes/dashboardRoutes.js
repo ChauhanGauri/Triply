@@ -16,6 +16,11 @@ router.use((req, res, next) => {
     next();
 });
 
+// Public browse schedules page (for all users - no auth required)
+router.get('/schedules', scheduleController.browseSchedules);
+router.get('/user/schedule', (req, res) => res.redirect('/schedules'));
+router.get('/user/schedules', (req, res) => res.redirect('/schedules'));
+
 // Admin dashboard routes (protected)
 router.get('/admin', isAuthenticated, isAdmin, dashboardController.getAdminDashboard);
 router.get('/admin/dashboard', isAuthenticated, isAdmin, dashboardController.getAdminDashboard);
@@ -48,10 +53,17 @@ router.get('/admin/reports', isAuthenticated, isAdmin, dashboardController.getAd
 
 // User browse routes (protected) - Must be before :userId routes to avoid conflicts
 router.get('/user/routes', isAuthenticated, dashboardController.getBrowseRoutes);
+// User profile (edit) routes - MUST be before :userId routes to avoid matching "profile" as userId
+router.get('/user/profile', isAuthenticated, isUser, dashboardController.getUserProfile);
+router.put('/user/profile', isAuthenticated, isUser, dashboardController.updateUserProfile);
 
 // User dashboard routes (protected)
 router.get('/user/:userId', isAuthenticated, isUser, dashboardController.getUserDashboard);
 router.get('/user/:userId/dashboard', isAuthenticated, isUser, dashboardController.getUserDashboard);
+
+// Allow accessing profile by userId (admins can edit others; users can edit own profile)
+router.get('/user/:userId/profile', isAuthenticated, isUser, dashboardController.getUserProfile);
+router.put('/user/:userId/profile', isAuthenticated, isUser, dashboardController.updateUserProfile);
 
 // User booking management routes (protected)
 router.get('/user/:userId/bookings', isAuthenticated, isUser, dashboardController.getUserBookings);

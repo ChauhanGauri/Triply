@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Schedules - Triply</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --gradient-pink: #EC4899;
+            --gradient-orange: #F59E0B;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.1);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* Unified Header (Dashboard Style) */
+        .user-header {
+            background: #1E293B;
+            color: white;
+            padding: 1.75rem 0 1.5rem;
+            border-radius: 0 0 20px 20px;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .user-title {
+            background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            font-size: 2.2rem;
+            margin-bottom: .25rem;
+        }
+        .btn-custom {
+            background: linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-custom:hover {
+            background: linear-gradient(135deg, #DB2777 0%, #D97706 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(236, 72, 153, 0.3);
+            color: white;
+            text-decoration: none;
+        }
+        .btn-outline-custom {
+            background: transparent;
+            border: 2px solid #EC4899;
+            color: #EC4899;
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-outline-custom:hover {
+            background: #EC4899;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(236, 72, 153, 0.3);
+            text-decoration: none;
+        }
+
+        /* Main Content */
+        .schedules-container {
+            padding: 2rem 0;
+        }
+
+        .page-header {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .page-title {
+            background: linear-gradient(135deg, var(--gradient-pink) 0%, var(--gradient-orange) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            font-size: 2rem;
+            margin: 0;
+        }
+
+        .page-subtitle {
+            color: #6B7280;
+            margin-top: 0.5rem;
+        }
+
+        /* Schedule Cards */
+        .schedule-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .schedule-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--gradient-pink);
+        }
+
+        .route-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1F2937;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .route-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #4B5563;
+        }
+
+        .meta-item i {
+            color: var(--gradient-pink);
+            font-size: 1.1rem;
+        }
+
+        .schedule-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #E5E7EB;
+        }
+
+        .schedule-info {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .badge-custom {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .badge-fare {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+        }
+
+        .badge-seats {
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+            color: white;
+        }
+
+        .btn-book {
+            background: linear-gradient(135deg, var(--gradient-pink) 0%, var(--gradient-orange) 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-book:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(236, 72, 153, 0.4);
+            color: white;
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-login:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+            color: white;
+        }
+
+        /* Empty State */
+        .no-schedules {
+            background: white;
+            border-radius: 12px;
+            padding: 4rem 2rem;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .no-schedules i {
+            font-size: 4rem;
+            color: #D1D5DB;
+            margin-bottom: 1rem;
+        }
+
+        .no-schedules h3 {
+            color: #6B7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .no-schedules p {
+            color: #9CA3AF;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .triply-nav {
+                gap: 1rem;
+            }
+
+            .route-meta {
+                grid-template-columns: 1fr;
+            }
+
+            .schedule-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .schedule-info {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn-book,
+            .btn-login {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Unified Banner Include -->
+    <%- include('../partials/banner', { user: currentUser }) %>
+
+    <!-- Main Content -->
+    <div class="container schedules-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="bi bi-calendar-week"></i>
+                Available Schedules
+            </h1>
+            <p class="page-subtitle">Browse and book your next journey</p>
+        </div>
+
+        <!-- Schedules List -->
+        <% if (schedules && schedules.length > 0) { %>
+            <% schedules.forEach(schedule => { %>
+                <div class="schedule-card">
+                    <div class="route-title">
+                        <i class="bi bi-geo-alt-fill"></i>
+                        <%= schedule.route.origin %> → <%= schedule.route.destination %>
+                    </div>
+
+                    <div class="route-meta">
+                        <div class="meta-item">
+                            <i class="bi bi-sign-turn-right-fill"></i>
+                            <span><strong>Route:</strong> #<%= schedule.route.routeNumber %></span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="bi bi-calendar-event"></i>
+                            <span><strong>Date:</strong> <%= new Date(schedule.journeyDate).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }) %></span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="bi bi-clock-fill"></i>
+                            <span><strong>Departure:</strong> <%= schedule.departureTime || 'TBD' %></span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="bi bi-bus-front"></i>
+                            <span><strong>Bus:</strong> <%= schedule.busNumber || 'Not assigned' %></span>
+                        </div>
+                        <% if (schedule.driverName) { %>
+                        <div class="meta-item">
+                            <i class="bi bi-person-circle"></i>
+                            <span><strong>Driver:</strong> <%= schedule.driverName %></span>
+                        </div>
+                        <% } %>
+                    </div>
+
+                    <div class="schedule-actions">
+                        <div class="schedule-info">
+                            <span class="badge-custom badge-fare">
+                                <i class="bi bi-currency-rupee"></i>
+                                ₹<%= schedule.route.fare.toLocaleString() %>
+                            </span>
+                            <span class="badge-custom badge-seats">
+                                <i class="bi bi-people-fill"></i>
+                                <%= schedule.availableSeats %> seats
+                            </span>
+                        </div>
+
+                        <% if (currentUser) { %>
+                            <a href="/user/<%= currentUser.id %>/bookings/new?schedule=<%= schedule._id %>" class="btn-book">
+                                <i class="bi bi-ticket-perforated-fill"></i>
+                                Book Now
+                            </a>
+                        <% } else { %>
+                            <a href="/auth/user/login?redirect=/schedules" class="btn-login">
+                                <i class="bi bi-box-arrow-in-right"></i>
+                                Login to Book
+                            </a>
+                        <% } %>
+                    </div>
+                </div>
+            <% }) %>
+        <% } else { %>
+            <div class="no-schedules">
+                <i class="bi bi-calendar-x"></i>
+                <h3>No Schedules Available</h3>
+                <p>There are currently no active schedules. Please check back later!</p>
+            </div>
+        <% } %>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

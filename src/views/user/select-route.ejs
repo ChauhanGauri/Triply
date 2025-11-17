@@ -208,7 +208,7 @@
       </div>
       <div class="collapse" id="filterSection">
         <div class="card-body">
-          <form id="filterForm">
+          <form id="filterForm" onsubmit="event.preventDefault(); return false;">
             <div class="row g-3">
               <!-- Date Filter -->
               <div class="col-md-3">
@@ -273,6 +273,7 @@
                   <i class="bi bi-person-plus"></i> Min Available Seats
                 </label>
                 <select class="form-select" id="minSeats" name="minSeats">
+                  <option value="">Any seats</option>
                   <option value="1">At least 1 seat</option>
                   <option value="2">At least 2 seats</option>
                   <option value="4">At least 4 seats</option>
@@ -401,7 +402,12 @@
                 <div class="row">
                   <% group.schedules.forEach(schedule => { %>
                     <div class="col-lg-6 col-xl-4 mb-3">
-                      <div class="schedule-item p-3 rounded h-100">
+                      <div class="schedule-item p-3 rounded h-100" 
+                           data-departure-time="<%= schedule.departureTime %>"
+                           data-arrival-time="<%= schedule.arrivalTime %>"
+                           data-fare="<%= group.route.fare %>"
+                           data-available-seats="<%= schedule.availableSeats %>"
+                           data-journey-date="<%= new Date(schedule.journeyDate).toISOString().split('T')[0] %>">
                         <div class="d-flex justify-content-between align-items-start mb-3">
                           <div>
                             <h6 class="mb-1">
@@ -473,6 +479,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/localStorage.js"></script>
   
   <!-- Filter JavaScript -->
   <script>
@@ -482,12 +489,25 @@
       // Populate route filter dropdown
       populateRouteFilter();
       
-      // Store all schedules for filtering
+      // Store all schedules for filtering (must be done first)
       storeAllSchedules();
       
-      // Set default date to today
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('journeyDate').value = today;
+      // Ensure filters start blank unless user saved preferences
+      document.getElementById('filterForm').reset();
+      
+      // Load saved filter preferences from localStorage (after schedules are stored)
+      // Use a small delay to ensure DOM is fully ready
+      setTimeout(() => {
+        loadFilterPreferences();
+      }, 200);
+
+      // Debug: Test if functions are available
+      console.log('🔧 Filter functions available:', {
+        applyFilters: typeof applyFilters,
+        clearFilters: typeof clearFilters,
+        storeAllSchedules: typeof storeAllSchedules,
+        schedulesCount: allSchedules.length
+      });
       
       // Check if a specific route is selected from dashboard
       const selectedRouteId = '<%= selectedRouteId || "" %>';
@@ -524,38 +544,70 @@
     function populateRouteFilter() {
       const routeFilter = document.getElementById('routeFilter');
       const routeCards = document.querySelectorAll('.route-card[data-route-number]');
-      const routes = new Set();
-      
+      const routes = new Map();
+
       routeCards.forEach(card => {
         const routeNumber = card.getAttribute('data-route-number');
-        const routeName = card.querySelector('.card-title').textContent.trim();
-        routes.add(JSON.stringify({number: routeNumber, name: routeName}));
+        if (!routeNumber) return;
+
+        // Try multiple selectors to avoid null errors
+        const headerTitle = card.querySelector('.route-card-title, .card-header h5, h5');
+        const routeName = headerTitle ? headerTitle.textContent.trim() : `Route ${routeNumber}`;
+
+        routes.set(routeNumber, routeName);
       });
-      
-      routes.forEach(routeStr => {
-        const route = JSON.parse(routeStr);
+
+      routes.forEach((name, number) => {
         const option = document.createElement('option');
-        option.value = route.number;
-        option.textContent = `${route.number} - ${route.name}`;
+        option.value = number;
+        option.textContent = `${number} - ${name}`;
         routeFilter.appendChild(option);
       });
     }
 
     function storeAllSchedules() {
-      const scheduleCards = document.querySelectorAll('.schedule-card');
-      allSchedules = Array.from(scheduleCards).map(card => {
+      const scheduleItems = document.querySelectorAll('.schedule-item');
+      allSchedules = Array.from(scheduleItems).map(item => {
+        // Get data from the schedule-item div (preferred) or select button (fallback)
+        const selectButton = item.querySelector('.select-schedule');
+        const routeCard = item.closest('.route-card');
+        
+        // Prefer data attributes on the schedule-item div, fallback to button
+        const departure = item.getAttribute('data-departure-time') || (selectButton ? selectButton.getAttribute('data-departure') : '');
+        const arrival = item.getAttribute('data-arrival-time') || (selectButton ? selectButton.getAttribute('data-arrival') : '');
+        const fare = parseFloat(item.getAttribute('data-fare')) || (selectButton ? parseFloat(selectButton.getAttribute('data-fare')) : 0);
+        const availableSeats = parseInt(item.getAttribute('data-available-seats')) || (selectButton ? parseInt(selectButton.getAttribute('data-available-seats')) : 0);
+        const journeyDateAttr = item.getAttribute('data-journey-date') || (selectButton ? selectButton.getAttribute('data-date') : '');
+        const normalizedJourneyDate = journeyDateAttr 
+          ? new Date(journeyDateAttr).toISOString().split('T')[0] 
+          : new Date().toISOString().split('T')[0];
+        const routeNumber = selectButton ? selectButton.getAttribute('data-route-number') : (routeCard ? routeCard.getAttribute('data-route-number') : '');
+        
         return {
-          element: card,
-          routeNumber: card.closest('.route-card').getAttribute('data-route-number'),
-          routeName: card.closest('.route-card').querySelector('.card-title').textContent.trim(),
-          departure: card.getAttribute('data-departure-time'),
-          arrival: card.getAttribute('data-arrival-time'),
-          fare: parseFloat(card.getAttribute('data-fare')),
-          availableSeats: parseInt(card.getAttribute('data-available-seats')),
-          capacity: parseInt(card.getAttribute('data-capacity')),
-          journeyDate: card.getAttribute('data-journey-date') || new Date().toISOString().split('T')[0]
+          element: item,
+          routeNumber: routeNumber,
+          routeName: routeCard ? routeCard.querySelector('h5')?.textContent.trim() || '' : '',
+          departure: departure,
+          arrival: arrival,
+          fare: fare,
+          availableSeats: availableSeats,
+          capacity: 0, // Not available in current HTML
+          journeyDate: normalizedJourneyDate
         };
       });
+      
+      console.log('✅ Stored schedules:', allSchedules.length);
+      if (allSchedules.length > 0) {
+        console.log('📋 Sample schedule:', allSchedules[0]);
+        console.log('📋 All schedules data:', allSchedules.map(s => ({
+          route: s.routeNumber,
+          departure: s.departure,
+          seats: s.availableSeats,
+          fare: s.fare
+        })));
+      } else {
+        console.warn('⚠️ No schedules found! Check if schedule-item elements exist in the DOM.');
+      }
     }
 
     function applyFilters() {
@@ -564,42 +616,111 @@
         departureFrom: document.getElementById('departureTimeFrom').value,
         departureTo: document.getElementById('departureTimeTo').value,
         route: document.getElementById('routeFilter').value,
-        minSeats: parseInt(document.getElementById('minSeats').value) || 1,
+        minSeats: parseInt(document.getElementById('minSeats').value) || 0,
         maxFare: parseFloat(document.getElementById('maxFare').value) || Infinity,
         sortBy: document.getElementById('sortBy').value
       };
 
-      console.log('Applying filters:', filters);
+      // Save filter preferences to localStorage
+      LocalStorageManager.saveFilterPreferences(filters);
+
+      console.log('🔍 Applying filters:', filters);
+      console.log('📊 Total schedules to filter:', allSchedules.length);
+      
+      if (allSchedules.length === 0) {
+        console.warn('⚠️ No schedules found! Make sure storeAllSchedules() was called.');
+        return;
+      }
+
+      // Helper function to compare time strings (HH:MM format)
+      function compareTime(time1, time2) {
+        if (!time1 || !time2) return 0;
+        const [h1, m1] = time1.split(':').map(Number);
+        const [h2, m2] = time2.split(':').map(Number);
+        const minutes1 = h1 * 60 + m1;
+        const minutes2 = h2 * 60 + m2;
+        return minutes1 - minutes2;
+      }
 
       // Filter schedules
       let filteredSchedules = allSchedules.filter(schedule => {
-        // Date filter (simplified for now as we don't have journey dates in current data)
-        
-        // Departure time range filter
-        if (filters.departureFrom && schedule.departure < filters.departureFrom) {
-          return false;
-        }
-        if (filters.departureTo && schedule.departure > filters.departureTo) {
-          return false;
+        // Debug: log schedule being checked
+        let matches = true;
+        let reasons = [];
+
+        // Journey date filter
+        if (filters.journeyDate) {
+          if (!schedule.journeyDate || schedule.journeyDate !== filters.journeyDate) {
+            matches = false;
+            reasons.push(`Date mismatch: ${schedule.journeyDate} !== ${filters.journeyDate}`);
+          }
         }
 
         // Route filter
-        if (filters.route && schedule.routeNumber !== filters.route) {
-          return false;
+        if (filters.route && filters.route !== '') {
+          if (schedule.routeNumber !== filters.route) {
+            matches = false;
+            reasons.push(`Route mismatch: ${schedule.routeNumber} !== ${filters.route}`);
+          }
+        }
+
+        // Departure time range filter
+        if (filters.departureFrom && filters.departureFrom !== '') {
+          if (compareTime(schedule.departure, filters.departureFrom) < 0) {
+            matches = false;
+            reasons.push(`Departure too early: ${schedule.departure} < ${filters.departureFrom}`);
+          }
+        }
+        
+        if (filters.departureTo && filters.departureTo !== '') {
+          if (compareTime(schedule.departure, filters.departureTo) > 0) {
+            matches = false;
+            reasons.push(`Departure too late: ${schedule.departure} > ${filters.departureTo}`);
+          }
         }
 
         // Minimum seats filter
-        if (schedule.availableSeats < filters.minSeats) {
-          return false;
+        if (filters.minSeats > 0) {
+          if (schedule.availableSeats < filters.minSeats) {
+            matches = false;
+            reasons.push(`Not enough seats: ${schedule.availableSeats} < ${filters.minSeats}`);
+          }
         }
 
         // Maximum fare filter
-        if (schedule.fare > filters.maxFare) {
-          return false;
+        if (filters.maxFare !== Infinity && filters.maxFare > 0) {
+          if (schedule.fare > filters.maxFare) {
+            matches = false;
+            reasons.push(`Fare too high: ${schedule.fare} > ${filters.maxFare}`);
+          }
         }
 
-        return true;
+        // Log if schedule doesn't match (for debugging)
+        if (!matches && reasons.length > 0) {
+          console.log(`❌ Schedule filtered out:`, {
+            route: schedule.routeNumber,
+            departure: schedule.departure,
+            seats: schedule.availableSeats,
+            fare: schedule.fare,
+            reasons: reasons
+          });
+        }
+
+        return matches;
       });
+
+      console.log('✅ Filtered schedules:', filteredSchedules.length, 'out of', allSchedules.length);
+      
+      // Debug: Show what filters were actually applied
+      const activeFilters = Object.entries(filters)
+        .filter(([key, value]) => {
+          if (key === 'sortBy') return true; // Always show sort
+          if (key === 'journeyDate') return value && value !== '';
+          if (key === 'maxFare') return value !== Infinity && value > 0;
+          return value && value !== '' && value !== 0;
+        })
+        .map(([key, value]) => `${key}: ${value}`);
+      console.log('🎯 Active filters:', activeFilters.join(', ') || 'None');
 
       // Sort schedules
       filteredSchedules.sort((a, b) => {
@@ -614,20 +735,40 @@
         }
       });
 
-      // Hide all schedule cards first
+      // Hide all schedule items first
       allSchedules.forEach(schedule => {
         schedule.element.style.display = 'none';
-        const routeCard = schedule.element.closest('.route-card');
+        const parentCol = schedule.element.closest('.col-lg-6, .col-xl-4');
+        if (parentCol) parentCol.style.display = 'none';
+      });
+      
+      // Hide all route cards initially
+      document.querySelectorAll('.route-card').forEach(routeCard => {
         routeCard.style.display = 'none';
       });
 
       // Show filtered schedules and their parent route cards
       const visibleRoutes = new Set();
       filteredSchedules.forEach(schedule => {
+        // Show the schedule item
         schedule.element.style.display = 'block';
+        // Show the parent column
+        const parentCol = schedule.element.closest('.col-lg-6, .col-xl-4');
+        if (parentCol) parentCol.style.display = 'block';
+        // Show the route card
         const routeCard = schedule.element.closest('.route-card');
-        routeCard.style.display = 'block';
-        visibleRoutes.add(schedule.routeNumber);
+        if (routeCard) {
+          routeCard.style.display = 'block';
+          visibleRoutes.add(schedule.routeNumber);
+        }
+      });
+      
+      // Hide route cards that have no visible schedules
+      document.querySelectorAll('.route-card').forEach(routeCard => {
+        const routeNumber = routeCard.getAttribute('data-route-number');
+        if (!visibleRoutes.has(routeNumber)) {
+          routeCard.style.display = 'none';
+        }
       });
 
       // Update results count and status
@@ -641,20 +782,73 @@
       // Reset all filter inputs
       document.getElementById('filterForm').reset();
       
-      // Set default date to today
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('journeyDate').value = today;
+      // Clear saved filter preferences
+      LocalStorageManager.clearFilterPreferences();
       
       // Show all schedules
       allSchedules.forEach(schedule => {
         schedule.element.style.display = 'block';
+        const parentCol = schedule.element.closest('.col-lg-6, .col-xl-4');
+        if (parentCol) parentCol.style.display = 'block';
         const routeCard = schedule.element.closest('.route-card');
-        routeCard.style.display = 'block';
+        if (routeCard) routeCard.style.display = 'block';
       });
 
       // Update display
       updateResultsDisplay(allSchedules.length, {});
       hideNoResultsMessage();
+    }
+
+    /**
+     * Load saved filter preferences from localStorage
+     */
+    function loadFilterPreferences() {
+      const savedFilters = LocalStorageManager.getFilterPreferences();
+      
+      if (savedFilters && Object.keys(savedFilters).length > 0) {
+        console.log('📥 Loading saved filter preferences:', savedFilters);
+        
+        // Restore filter values
+        if (savedFilters.journeyDate) {
+          document.getElementById('journeyDate').value = savedFilters.journeyDate;
+        }
+        if (savedFilters.departureFrom) {
+          document.getElementById('departureTimeFrom').value = savedFilters.departureFrom;
+        }
+        if (savedFilters.departureTo) {
+          document.getElementById('departureTimeTo').value = savedFilters.departureTo;
+        }
+        if (savedFilters.route) {
+          document.getElementById('routeFilter').value = savedFilters.route;
+        }
+        if (savedFilters.minSeats) {
+          document.getElementById('minSeats').value = savedFilters.minSeats;
+        }
+        if (savedFilters.maxFare && savedFilters.maxFare !== Infinity) {
+          document.getElementById('maxFare').value = savedFilters.maxFare;
+        }
+        if (savedFilters.sortBy) {
+          document.getElementById('sortBy').value = savedFilters.sortBy;
+        }
+        
+        // Apply the loaded filters (ensure schedules are stored first)
+        if (allSchedules.length > 0) {
+          setTimeout(() => {
+            console.log('🔄 Applying loaded filters...');
+            applyFilters();
+          }, 100);
+        } else {
+          console.warn('⚠️ Cannot apply filters: schedules not stored yet. Retrying...');
+          // Retry after a short delay
+          setTimeout(() => {
+            if (allSchedules.length > 0) {
+              applyFilters();
+            } else {
+              console.error('❌ Failed to load schedules. Filters not applied.');
+            }
+          }, 500);
+        }
+      }
     }
 
     function updateResultsDisplay(count, filters) {
@@ -730,10 +924,62 @@
       });
     }
 
+    // Ensure applyFilters and clearFilters are accessible globally
+    window.applyFilters = applyFilters;
+    window.clearFilters = clearFilters;
+
     // Auto-apply filters when date changes
-    document.getElementById('journeyDate').addEventListener('change', function() {
-      applyFilters();
-    });
+    const journeyDateInput = document.getElementById('journeyDate');
+    if (journeyDateInput) {
+      journeyDateInput.addEventListener('change', function() {
+        console.log('📅 Date changed, applying filters...');
+        applyFilters();
+      });
+    }
+
+    // Add event listeners to filter buttons (backup to onclick)
+    setTimeout(() => {
+      const filterForm = document.getElementById('filterForm');
+      if (filterForm) {
+        // Find buttons by their onclick attribute or text content
+        const buttons = filterForm.querySelectorAll('button');
+        buttons.forEach(btn => {
+          const btnText = btn.textContent.trim().toLowerCase();
+          if (btnText.includes('apply') || btn.onclick?.toString().includes('applyFilters')) {
+            btn.addEventListener('click', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('🔘 Apply Filters button clicked (via event listener)');
+              if (typeof applyFilters === 'function') {
+                applyFilters();
+              } else {
+                console.error('❌ applyFilters function not found!');
+              }
+            });
+          }
+          if (btnText.includes('clear') || btn.onclick?.toString().includes('clearFilters')) {
+            btn.addEventListener('click', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('🔘 Clear Filters button clicked (via event listener)');
+              if (typeof clearFilters === 'function') {
+                clearFilters();
+              } else {
+                console.error('❌ clearFilters function not found!');
+              }
+            });
+          }
+        });
+
+        // Prevent form submission
+        filterForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('🚫 Form submission prevented');
+          return false;
+        });
+      }
+    }, 300);
   </script>
 
   <!-- Booking Selection JavaScript -->
@@ -761,6 +1007,18 @@
           };
           
           sessionStorage.setItem('selectedSchedule', JSON.stringify(scheduleData));
+          
+          // Track recently viewed route in localStorage
+          const routeCard = this.closest('.route-card');
+          if (routeCard) {
+            const routeData = {
+              routeNumber: this.dataset.routeNumber,
+              origin: this.dataset.origin,
+              destination: this.dataset.destination,
+              fare: this.dataset.fare
+            };
+            LocalStorageManager.addRecentlyViewedRoute(routeData);
+          }
           
           // Redirect to booking form
           window.location.href = `/user/<%= user.id %>/bookings/form?schedule=${scheduleId}`;
