@@ -789,6 +789,30 @@ class DashboardController {
             });
         }
     }
+
+    // Browse all available routes (for users)
+    async getBrowseRoutes(req, res) {
+        try {
+            console.log('🗺️ Loading browse routes page');
+            
+            // Get all active routes, sorted by route number
+            const routes = await Route.find({ isActive: true }).sort({ routeNumber: 1 });
+            
+            console.log(`📋 Found ${routes.length} active routes`);
+
+            res.render('user/browse-routes', {
+                title: 'Browse Routes - Triply',
+                routes
+            });
+        } catch (error) {
+            console.error('Error loading browse routes:', error);
+            res.status(500).render('error', {
+                title: 'Error',
+                message: 'Error loading routes',
+                error: error
+            });
+        }
+    }
 }
 
 module.exports = new DashboardController();

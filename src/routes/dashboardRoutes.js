@@ -46,6 +46,9 @@ router.delete('/admin/users/:id', isAuthenticated, isAdmin, userController.delet
 router.get('/admin/bookings', isAuthenticated, isAdmin, dashboardController.getAdminBookings);
 router.get('/admin/reports', isAuthenticated, isAdmin, dashboardController.getAdminReports);
 
+// User browse routes (protected) - Must be before :userId routes to avoid conflicts
+router.get('/user/routes', isAuthenticated, dashboardController.getBrowseRoutes);
+
 // User dashboard routes (protected)
 router.get('/user/:userId', isAuthenticated, isUser, dashboardController.getUserDashboard);
 router.get('/user/:userId/dashboard', isAuthenticated, isUser, dashboardController.getUserDashboard);

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browse Routes - Triply</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <style>
+    :root {
+      --primary-dark: #1E293B;
+      --primary-blue: #3B82F6;
+      --accent-amber: #F59E0B;
+      --accent-pink: #EC4899;
+      --neutral-light: #F8FAFC;
+      --success-green: #10B981;
+    }
+
+    body {
+      background: linear-gradient(135deg, #F8FAFC 0%, #FFFFFF 100%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+    }
+
+    .dashboard-header {
+      background: var(--primary-dark);
+      color: white;
+      padding: 2rem 0;
+      box-shadow: 0 4px 12px rgba(30, 41, 59, 0.15);
+    }
+
+    .dashboard-title {
+      background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 700;
+    }
+
+    .btn-custom {
+      background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+      border: none;
+      border-radius: 12px;
+      padding: 0.75rem 1.5rem;
+      font-weight: 600;
+      color: white;
+      transition: all 0.3s ease;
+    }
+
+    .btn-custom:hover {
+      background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+      color: white;
+    }
+
+    .filter-card {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 12px rgba(30, 41, 59, 0.08);
+    }
+
+    .route-card {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 12px rgba(30, 41, 59, 0.08);
+      border: 2px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    .route-card:hover {
+      border-color: var(--accent-amber);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(245, 158, 11, 0.2);
+    }
+
+    .route-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .route-number {
+      background: linear-gradient(135deg, var(--primary-blue), var(--accent-pink));
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .route-path {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 1rem 0;
+      padding: 1rem;
+      background: var(--neutral-light);
+      border-radius: 12px;
+    }
+
+    .location {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: var(--primary-dark);
+    }
+
+    .arrow {
+      color: var(--accent-amber);
+      font-size: 1.5rem;
+    }
+
+    .route-details {
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .detail-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .detail-icon {
+      color: var(--accent-amber);
+      font-size: 1.2rem;
+    }
+
+    .stops-section {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #E5E7EB;
+    }
+
+    .stops-badge {
+      display: inline-block;
+      background: var(--neutral-light);
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      margin: 0.25rem;
+      font-size: 0.9rem;
+    }
+
+    .fare-badge {
+      background: linear-gradient(135deg, var(--success-green), #059669);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .book-btn {
+      background: linear-gradient(135deg, var(--accent-amber), #D97706);
+      border: none;
+      border-radius: 12px;
+      padding: 0.75rem 2rem;
+      color: white;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .book-btn:hover {
+      background: linear-gradient(135deg, #D97706, #B45309);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+      color: white;
+    }
+
+    .no-routes {
+      text-align: center;
+      padding: 3rem;
+      color: #64748B;
+    }
+
+    .search-input {
+      border-radius: 12px;
+      border: 2px solid #E5E7EB;
+      padding: 0.75rem 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent-amber);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="dashboard-header">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col">
+          <a href="/user/<%= currentUser.id %>/dashboard" class="text-decoration-none">
+            <h1 class="dashboard-title mb-1">
+              <i class="bi bi-bus-front me-3"></i>Triply
+            </h1>
+          </a>
+          <p class="mb-0 opacity-75">Browse Available Routes</p>
+        </div>
+        <div class="col-auto">
+          <a href="/user/<%= currentUser.id %>/dashboard" class="btn-custom">
+            <i class="bi bi-house"></i> Dashboard
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="container py-4">
+    
+    <!-- Filters -->
+    <div class="filter-card">
+      <h5 class="mb-3"><i class="bi bi-funnel me-2"></i>Filter Routes</h5>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <input type="text" id="searchOrigin" class="form-control search-input" placeholder="Search by origin...">
+        </div>
+        <div class="col-md-4">
+          <input type="text" id="searchDestination" class="form-control search-input" placeholder="Search by destination...">
+        </div>
+        <div class="col-md-4">
+          <input type="text" id="searchStop" class="form-control search-input" placeholder="Search by stop...">
+        </div>
+      </div>
+    </div>
+
+    <!-- Routes List -->
+    <div id="routesList">
+      <% if (routes && routes.length > 0) { %>
+        <% routes.forEach(route => { %>
+          <div class="route-card" data-route='<%= JSON.stringify({origin: route.origin, destination: route.destination, stops: route.stops || []}) %>'>
+            <div class="route-header">
+              <div class="route-number">
+                <i class="bi bi-signpost-2"></i> <%= route.routeNumber %>
+              </div>
+              <div class="fare-badge">
+                ₹<%= route.fare %>
+              </div>
+            </div>
+
+            <div class="route-path">
+              <div class="location">
+                <i class="bi bi-geo-alt-fill"></i> <%= route.origin %>
+              </div>
+              <div class="arrow">
+                <i class="bi bi-arrow-right"></i>
+              </div>
+              <div class="location">
+                <i class="bi bi-geo-alt-fill"></i> <%= route.destination %>
+              </div>
+            </div>
+
+            <div class="route-details">
+              <div class="detail-item">
+                <i class="bi bi-speedometer2 detail-icon"></i>
+                <span><strong><%= route.distance %> km</strong></span>
+              </div>
+              <div class="detail-item">
+                <i class="bi bi-clock detail-icon"></i>
+                <span><strong><%= Math.floor(route.duration / 60) %> hrs <%= route.duration % 60 %> mins</strong></span>
+              </div>
+              <% if (route.stops && route.stops.length > 0) { %>
+                <div class="detail-item">
+                  <i class="bi bi-pin-map detail-icon"></i>
+                  <span><strong><%= route.stops.length %> stops</strong></span>
+                </div>
+              <% } %>
+            </div>
+
+            <% if (route.description) { %>
+              <p class="text-muted mt-2"><%= route.description %></p>
+            <% } %>
+
+            <% if (route.stops && route.stops.length > 0) { %>
+              <div class="stops-section">
+                <h6><i class="bi bi-pin-map-fill me-2"></i>Stops Along the Route:</h6>
+                <% route.stops.forEach(stop => { %>
+                  <span class="stops-badge"><i class="bi bi-geo-alt"></i> <%= stop %></span>
+                <% }); %>
+              </div>
+            <% } %>
+
+            <div class="text-end mt-3">
+              <a href="/user/<%= currentUser.id %>/bookings/new?routeId=<%= route._id %>" class="book-btn">
+                <i class="bi bi-ticket-detailed me-2"></i>Book Now
+              </a>
+            </div>
+          </div>
+        <% }); %>
+      <% } else { %>
+        <div class="no-routes">
+          <i class="bi bi-map" style="font-size: 4rem; color: #CBD5E1;"></i>
+          <h4 class="mt-3">No Routes Available</h4>
+          <p>Check back later for available routes</p>
+        </div>
+      <% } %>
+    </div>
+
+    <div id="noResults" class="no-routes" style="display: none;">
+      <i class="bi bi-search" style="font-size: 4rem; color: #CBD5E1;"></i>
+      <h4 class="mt-3">No Routes Found</h4>
+      <p>Try adjusting your search filters</p>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Filter functionality
+    const searchOrigin = document.getElementById('searchOrigin');
+    const searchDestination = document.getElementById('searchDestination');
+    const searchStop = document.getElementById('searchStop');
+    const routeCards = document.querySelectorAll('.route-card');
+    const noResults = document.getElementById('noResults');
+
+    function filterRoutes() {
+      const originValue = searchOrigin.value.toLowerCase();
+      const destinationValue = searchDestination.value.toLowerCase();
+      const stopValue = searchStop.value.toLowerCase();
+      let visibleCount = 0;
+
+      routeCards.forEach(card => {
+        const routeData = JSON.parse(card.getAttribute('data-route'));
+        const origin = routeData.origin.toLowerCase();
+        const destination = routeData.destination.toLowerCase();
+        const stops = routeData.stops || [];
+        
+        const matchesOrigin = origin.includes(originValue);
+        const matchesDestination = destination.includes(destinationValue);
+        const matchesStop = stopValue === '' || 
+                           stops.some(stop => stop.toLowerCase().includes(stopValue));
+
+        if (matchesOrigin && matchesDestination && matchesStop) {
+          card.style.display = 'block';
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      // Show/hide no results message
+      if (visibleCount === 0 && routeCards.length > 0) {
+        noResults.style.display = 'block';
+      } else {
+        noResults.style.display = 'none';
+      }
+    }
+
+    searchOrigin.addEventListener('input', filterRoutes);
+    searchDestination.addEventListener('input', filterRoutes);
+    searchStop.addEventListener('input', filterRoutes);
+  </script>
+</body>
+</html>

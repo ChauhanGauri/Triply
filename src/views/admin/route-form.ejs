@@ -262,10 +262,26 @@
                       <small class="form-text text-muted">Auto-calculated based on origin and destination</small>
                     </div>
                     <div class="col-md-6 mb-3">
-                      <label for="duration" class="form-label">Duration (minutes) *</label>
-                      <input type="number" class="form-control" id="duration" name="duration" min="1"
-                             value="<%= route ? route.duration : '' %>" readonly required>
-                      <small class="form-text text-muted">Auto-calculated (avg 50 km/hr)</small>
+                      <label class="form-label">Duration *</label>
+                      <div class="row g-2">
+                        <div class="col-6">
+                          <div class="input-group">
+                            <input type="number" class="form-control" id="durationHours" min="0" max="23"
+                                   value="<%= route ? Math.floor(route.duration / 60) : 0 %>" placeholder="0">
+                            <span class="input-group-text">hrs</span>
+                          </div>
+                        </div>
+                        <div class="col-6">
+                          <div class="input-group">
+                            <input type="number" class="form-control" id="durationMinutes" min="0" max="59"
+                                   value="<%= route ? route.duration % 60 : 0 %>" placeholder="0">
+                            <span class="input-group-text">mins</span>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Hidden field for actual duration in minutes -->
+                      <input type="hidden" id="duration" name="duration" value="<%= route ? route.duration : '' %>" required>
+                      <small class="form-text text-muted">You can adjust the auto-calculated duration</small>
                     </div>
                   </div>
 
@@ -706,11 +722,55 @@
           distanceInput.value = distance;
           const duration = calculateDuration(distance);
           durationInput.value = duration;
+          
+          // Update hours and minutes fields
+          const hours = Math.floor(duration / 60);
+          const minutes = duration % 60;
+          document.getElementById('durationHours').value = hours;
+          document.getElementById('durationMinutes').value = minutes;
         }
       } else {
         distanceInput.value = '';
         durationInput.value = '';
+        document.getElementById('durationHours').value = 0;
+        document.getElementById('durationMinutes').value = 0;
       }
+    }
+
+    // Duration calculation from hours and minutes
+    const hoursInput = document.getElementById('durationHours');
+    const minutesInput = document.getElementById('durationMinutes');
+    const durationInput = document.getElementById('duration');
+
+    function updateDuration() {
+      const hours = parseInt(hoursInput.value) || 0;
+      const minutes = parseInt(minutesInput.value) || 0;
+      const totalMinutes = (hours * 60) + minutes;
+      durationInput.value = totalMinutes;
+      
+      // Validation: Duration must be at least 1 minute
+      if (totalMinutes < 1) {
+        durationInput.setCustomValidity('Duration must be at least 1 minute');
+      } else {
+        durationInput.setCustomValidity('');
+      }
+    }
+
+    // Update on input change
+    if (hoursInput && minutesInput) {
+      hoursInput.addEventListener('input', updateDuration);
+      minutesInput.addEventListener('input', updateDuration);
+
+      // Validate minutes don't exceed 59
+      minutesInput.addEventListener('change', function() {
+        if (this.value > 59) {
+          this.value = 59;
+          updateDuration();
+        }
+      });
+
+      // Initialize on page load
+      updateDuration();
     }
 
     // Initialize on page load
@@ -733,6 +793,18 @@
       });
       
       destinationSelect.addEventListener('change', updateDistanceAndDuration);
+
+      // Validate form before submission
+      const form = document.querySelector('form');
+      form.addEventListener('submit', function(e) {
+        const totalMinutes = parseInt(durationInput.value);
+        if (totalMinutes < 1) {
+          e.preventDefault();
+          alert('Please enter a valid duration (at least 1 minute)');
+          hoursInput.focus();
+          return false;
+        }
+      });
     });
   </script>
 </body>
