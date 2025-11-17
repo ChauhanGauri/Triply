@@ -270,8 +270,9 @@
                   </div>
 
                   <div class="mb-3">
-                    <label for="description" class="form-label">Description</label>
-                    <textarea class="form-control" id="description" name="description" rows="3"><%= route ? route.description || '' : '' %></textarea>
+                    <label for="description" class="form-label">Description (Optional)</label>
+                    <textarea class="form-control" id="description" name="description" rows="3" placeholder="Auto-generated description will appear here..."><%= route ? route.description || '' : '' %></textarea>
+                    <small class="form-text text-muted">Auto-generated based on route. You can edit or clear this.</small>
                   </div>
 
                   <div class="mb-3">
@@ -537,6 +538,52 @@
       const avgSpeed = 50; // km/hr
       const hours = distance / avgSpeed;
       return Math.round(hours * 60); // Convert to minutes
+    }
+
+    // Function to generate description based on route details
+    function generateDescription(origin, destination, distance) {
+      if (!origin || !destination || !distance) return '';
+      
+      const originCity = cities.find(c => c.name === origin);
+      const destCity = cities.find(c => c.name === destination);
+      
+      if (!originCity || !destCity) return '';
+      
+      const hours = Math.floor(distance / 50);
+      const minutes = Math.round((distance / 50 - hours) * 60);
+      const timeStr = hours > 0 ? `${hours} hour${hours > 1 ? 's' : ''}${minutes > 0 ? ` ${minutes} min` : ''}` : `${minutes} minutes`;
+      
+      // Different templates based on route characteristics
+      let description = '';
+      
+      if (distance < 150) {
+        // Short distance routes
+        description = `Direct express route connecting ${origin} (${originCity.state}) to ${destination} (${destCity.state}). ` +
+                     `Comfortable ${distance}km journey in approximately ${timeStr}. ` +
+                     `Perfect for daily commuters and quick city-to-city travel.`;
+      } else if (distance < 500) {
+        // Medium distance routes
+        description = `Premium intercity bus service from ${origin} to ${destination}, covering ${distance}km. ` +
+                     `Travel time approximately ${timeStr}. ` +
+                     `Connecting ${originCity.state} and ${destCity.state} with comfortable seating and regular stops.`;
+      } else if (distance < 1000) {
+        // Long distance routes
+        description = `Long-distance express service connecting ${origin} (${originCity.state}) to ${destination} (${destCity.state}). ` +
+                     `${distance}km journey with an estimated travel time of ${timeStr}. ` +
+                     `Equipped with modern amenities for a comfortable long-haul journey.`;
+      } else {
+        // Very long distance routes
+        description = `Premium long-haul service from ${origin} to ${destination}, spanning ${distance}km across ${originCity.state} and ${destCity.state}. ` +
+                     `Journey duration approximately ${timeStr}. ` +
+                     `Luxury coaches with sleeper berths, rest stops, and onboard facilities for maximum comfort.`;
+      }
+      
+      // Add regional context
+      if (originCity.region !== destCity.region) {
+        description += ` This inter-regional route connects ${originCity.region} India with ${destCity.region} India.`;
+      }
+      
+      return description;
     }
 
     // Function to get valid destinations based on origin
