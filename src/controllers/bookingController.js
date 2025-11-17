@@ -47,9 +47,11 @@ class BookingController {
             await newBooking.save();
             
             // Update available seats in the schedule
-            await Schedule.findByIdAndUpdate(req.body.schedule, {
-                $inc: { availableSeats: -seatCount }
-            });
+            const updatedSchedule = await Schedule.findByIdAndUpdate(
+                req.body.schedule, 
+                { $inc: { availableSeats: -seatCount } },
+                { new: true }
+            );
             
             // Generate/update passenger manifest for this schedule
             try {
@@ -71,6 +73,17 @@ class BookingController {
                     .populate({ path: 'schedule', populate: { path: 'route' } });
                 io.to('admins').emit('bookingCreated', { booking: populated });
                 io.to(`user_${populated.user ? populated.user._id : 'unknown'}`).emit('bookingCreated', { booking: populated });
+                
+                // Emit seat availability update to all users browsing routes
+                if (updatedSchedule) {
+                    io.emit('scheduleSeatsUpdated', {
+                        scheduleId: updatedSchedule._id.toString(),
+                        availableSeats: updatedSchedule.availableSeats,
+                        totalSeats: updatedSchedule.totalSeats,
+                        routeId: schedule.route.toString()
+                    });
+                    console.log(`Emitted seat update: Schedule ${updatedSchedule._id} now has ${updatedSchedule.availableSeats} seats`);
+                }
             } catch (emitErr) {
                 // Socket might not be initialized in some environments; ignore errors
                 console.warn('Socket emit skipped (not initialized):', emitErr.message);

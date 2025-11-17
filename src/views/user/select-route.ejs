@@ -1026,6 +1026,96 @@
       });
     });
   </script>
+
+  <!-- Socket.io for real-time seat updates -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    try {
+      const socket = io({
+        withCredentials: true,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5
+      });
+
+      socket.on('authenticated', (data) => {
+        console.log('✅ Socket authenticated for real-time updates');
+      });
+
+      socket.on('unauthorized', (data) => {
+        console.warn('Socket unauthorized:', data.message);
+      });
+
+      // Listen for seat availability updates
+      socket.on('scheduleSeatsUpdated', (data) => {
+        console.log('Seat update received:', data);
+        
+        // Find all schedule items with this schedule ID
+        const scheduleButtons = document.querySelectorAll(`.select-schedule[data-schedule-id="${data.scheduleId}"]`);
+        
+        scheduleButtons.forEach(button => {
+          // Find the parent schedule item
+          const scheduleItem = button.closest('.schedule-item');
+          if (!scheduleItem) return;
+
+          // Update the available seats display
+          const seatsDisplay = scheduleItem.querySelector('.available-seats');
+          if (seatsDisplay) {
+            seatsDisplay.innerHTML = `<i class="bi bi-people"></i> ${data.availableSeats} seats`;
+            
+            // Update visual feedback
+            if (data.availableSeats === 0) {
+              seatsDisplay.classList.add('text-danger');
+              seatsDisplay.innerHTML = `<i class="bi bi-x-circle"></i> Sold Out`;
+            } else if (data.availableSeats <= 5) {
+              seatsDisplay.classList.add('text-warning');
+            } else {
+              seatsDisplay.classList.remove('text-danger', 'text-warning');
+            }
+          }
+
+          // Update data attribute
+          scheduleItem.setAttribute('data-available-seats', data.availableSeats);
+          button.setAttribute('data-available-seats', data.availableSeats);
+
+          // Disable/enable button based on availability
+          if (data.availableSeats === 0) {
+            button.disabled = true;
+            button.textContent = 'Sold Out';
+            button.classList.remove('btn-primary');
+            button.classList.add('btn-secondary');
+            scheduleItem.style.opacity = '0.6';
+          } else {
+            button.disabled = false;
+            button.textContent = 'Select Schedule';
+            button.classList.remove('btn-secondary');
+            button.classList.add('btn-primary');
+            scheduleItem.style.opacity = '1';
+          }
+        });
+
+        // Show toast notification
+        if (data.availableSeats <= 5 && data.availableSeats > 0) {
+          showToast(`Only ${data.availableSeats} seats left!`, 'warning');
+        } else if (data.availableSeats === 0) {
+          showToast('Schedule is now fully booked!', 'danger');
+        }
+      });
+
+      function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        const bgClass = type === 'warning' ? 'bg-warning' : type === 'danger' ? 'bg-danger text-white' : 'bg-info text-white';
+        toast.className = `alert ${bgClass} position-fixed bottom-0 end-0 m-3`;
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `<strong>${message}</strong>`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+      }
+    } catch (err) {
+      console.warn('Socket.io initialization failed:', err);
+    }
+  </script>
   </div>
 </body>
 </html>
+```
