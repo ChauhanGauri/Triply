@@ -313,9 +313,31 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     try {
-      const socket = io();
-      // join this user's personal room
-      socket.emit('joinRoom', `user_<%= user.id %>`);
+      const socket = io({
+        withCredentials: true,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5
+      });
+
+      // Handle authentication events
+      socket.on('authenticated', (data) => {
+        console.log('✅ Socket authenticated:', data.user.name);
+      });
+
+      socket.on('unauthorized', (data) => {
+        console.error('🔴 Socket unauthorized:', data.message);
+        alert('Session expired. Please log in again.');
+        window.location.href = '/auth/user/login';
+      });
+
+      socket.on('connect', () => {
+        console.log('🟢 Socket connected');
+      });
+
+      socket.on('disconnect', (reason) => {
+        console.log('🔴 Socket disconnected:', reason);
+      });
 
           socket.on('bookingCancelled', (payload) => {
         try {

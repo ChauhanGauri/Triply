@@ -54,7 +54,7 @@ async function initializeRedisAndStartServer() {
   }
 
   // Session configuration (after Redis connection attempt)
-app.use(session({
+const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
   resave: false,
   saveUninitialized: false,
@@ -64,7 +64,9 @@ app.use(session({
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
-}));
+});
+
+app.use(sessionMiddleware);
 
 // Add user to views middleware
 const { addUserToViews } = require('./src/middleware/auth');
@@ -157,8 +159,8 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
 
-  // initialize socket.io (after Redis connection)
-initSocket(server);
+  // initialize socket.io (after Redis connection) - pass session middleware
+initSocket(server, sessionMiddleware);
 
 server.listen(PORT, () => {
   console.log(`✅ Server is running on port ${PORT}`);
