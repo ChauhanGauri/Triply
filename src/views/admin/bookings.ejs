@@ -570,8 +570,35 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     try {
-      const socket = io();
-      socket.emit('joinRoom', 'admins');
+      const socket = io({
+        withCredentials: true,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5
+      });
+
+      // Handle authentication events
+      socket.on('authenticated', (data) => {
+        console.log('✅ Socket authenticated:', data.user.name, `(${data.user.role})`);
+      });
+
+      socket.on('unauthorized', (data) => {
+        console.error('🔴 Socket unauthorized:', data.message);
+        alert('Session expired. Please log in again.');
+        window.location.href = '/auth/admin/login';
+      });
+
+      socket.on('connect', () => {
+        console.log('🟢 Socket connected');
+      });
+
+      socket.on('disconnect', (reason) => {
+        console.log('🔴 Socket disconnected:', reason);
+      });
+
+      socket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
+      });
 
       socket.on('bookingCreated', (payload) => {
         try {
@@ -602,10 +629,22 @@
 
           if (tbody.firstChild) tbody.insertBefore(tr, tbody.firstChild);
           else tbody.appendChild(tr);
+          
+          // Show toast notification
+          showToast('New booking received!', 'success');
         } catch (err) {
           console.error('Error handling bookingCreated on bookings page:', err);
         }
       });
+
+      function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'success' ? 'success' : 'info'} position-fixed top-0 end-0 m-3`;
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `<strong>${message}</strong>`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      }
 
       function escapeHtml(str) {
         if (!str && str !== 0) return '';
