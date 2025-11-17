@@ -96,6 +96,27 @@ function initSocket(server, expressSessionMiddleware) {
       }
     });
 
+    // Handle joining schedule-specific rooms for seat updates
+    socket.on('joinSchedule', (scheduleId) => {
+      try {
+        const scheduleRoom = `schedule_${scheduleId}`;
+        socket.join(scheduleRoom);
+        console.log(`   ✓ User ${user.name} joined schedule room: ${scheduleRoom}`);
+      } catch (err) {
+        console.warn('Error joining schedule room', err);
+      }
+    });
+
+    socket.on('leaveSchedule', (scheduleId) => {
+      try {
+        const scheduleRoom = `schedule_${scheduleId}`;
+        socket.leave(scheduleRoom);
+        console.log(`   ✓ User ${user.name} left schedule room: ${scheduleRoom}`);
+      } catch (err) {
+        console.warn('Error leaving schedule room', err);
+      }
+    });
+
     // Handle disconnection
     socket.on('disconnect', () => {
       console.log(`🔴 Socket disconnected: ${socket.id} | User: ${user.name}`);

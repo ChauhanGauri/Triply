@@ -11,6 +11,7 @@ const scheduleSchema = new mongoose.Schema({
     driverName: { type: String },
     capacity: { type: Number, default: 40 }, // Total seats in bus
     availableSeats: { type: Number, default: 40 }, // Available seats (reduced with bookings)
+    bookedSeats: { type: [Number], default: [] }, // Array of booked seat numbers (1-40)
     isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 

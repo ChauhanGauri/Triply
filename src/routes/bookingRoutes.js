@@ -16,6 +16,9 @@ router.get('/user/:userId', bookingController.getUserBookings.bind(bookingContro
 // Get booking statistics
 router.get('/statistics', bookingController.getBookingStatistics.bind(bookingController));
 
+// Get seat availability for a schedule
+router.get('/schedule/:scheduleId/seats', bookingController.getSeatAvailability.bind(bookingController));
+
 // Get a booking by ID
 router.get('/:id', bookingController.getBookingById.bind(bookingController));
 

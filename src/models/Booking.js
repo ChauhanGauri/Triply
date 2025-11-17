@@ -10,6 +10,7 @@ const bookingSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     schedule: { type: mongoose.Schema.Types.ObjectId, ref: 'Schedule', required: true },
     seats: { type: Number, required: true },
+    seatNumbers: { type: [Number], default: [] }, // Array of selected seat numbers
     status: { type: String, enum: ['confirmed', 'cancelled'], default: 'confirmed' },
     bookingReference: { type: String, unique: true }, // Generated booking ID
     passengers: [passengerSchema], // Array of passenger details

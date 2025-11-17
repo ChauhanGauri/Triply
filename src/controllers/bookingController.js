@@ -22,12 +22,56 @@ class BookingController {
             const seatCount = parseInt(req.body.passengers) || 1;
             req.body.seats = seatCount;
             
+            // Get selected seat numbers
+            let seatNumbers = [];
+            if (req.body.seatNumbers) {
+                if (typeof req.body.seatNumbers === 'string') {
+                    seatNumbers = req.body.seatNumbers.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+                } else if (Array.isArray(req.body.seatNumbers)) {
+                    seatNumbers = req.body.seatNumbers.map(s => parseInt(s)).filter(n => !isNaN(n));
+                }
+            }
+            
+            // Validate seat numbers
+            if (seatNumbers.length !== seatCount) {
+                const errorMessage = `Please select exactly ${seatCount} seat(s)`;
+                if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                    return res.status(400).json({ message: errorMessage });
+                } else {
+                    return res.redirect(`/user/${req.params.userId}/bookings/new?error=${encodeURIComponent(errorMessage)}`);
+                }
+            }
+            
+            // Validate seat numbers are in valid range (1-40)
+            const invalidSeats = seatNumbers.filter(s => s < 1 || s > 40);
+            if (invalidSeats.length > 0) {
+                const errorMessage = `Invalid seat numbers: ${invalidSeats.join(', ')}`;
+                if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                    return res.status(400).json({ message: errorMessage });
+                } else {
+                    return res.redirect(`/user/${req.params.userId}/bookings/new?error=${encodeURIComponent(errorMessage)}`);
+                }
+            }
+            
+            req.body.seatNumbers = seatNumbers;
+            
             // Check if schedule has enough available seats
             const schedule = await Schedule.findById(req.body.schedule);
             if (!schedule) {
                 const errorMessage = 'Selected schedule not found';
                 if (req.headers.accept && req.headers.accept.includes('application/json')) {
                     return res.status(404).json({ message: errorMessage });
+                } else {
+                    return res.redirect(`/user/${req.params.userId}/bookings/new?error=${encodeURIComponent(errorMessage)}`);
+                }
+            }
+            
+            // Check if any selected seats are already booked
+            const alreadyBooked = seatNumbers.filter(seat => schedule.bookedSeats.includes(seat));
+            if (alreadyBooked.length > 0) {
+                const errorMessage = `Seats ${alreadyBooked.join(', ')} are already booked. Please select different seats.`;
+                if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                    return res.status(400).json({ message: errorMessage });
                 } else {
                     return res.redirect(`/user/${req.params.userId}/bookings/new?error=${encodeURIComponent(errorMessage)}`);
                 }
@@ -46,9 +90,10 @@ class BookingController {
             const newBooking = new Booking(req.body);
             await newBooking.save();
             
-            // Update available seats in the schedule
+            // Update available seats and booked seats in the schedule
             await Schedule.findByIdAndUpdate(req.body.schedule, {
-                $inc: { availableSeats: -seatCount }
+                $inc: { availableSeats: -seatCount },
+                $push: { bookedSeats: { $each: seatNumbers } }
             });
             
             // Generate/update passenger manifest for this schedule
@@ -71,6 +116,13 @@ class BookingController {
                     .populate({ path: 'schedule', populate: { path: 'route' } });
                 io.to('admins').emit('bookingCreated', { booking: populated });
                 io.to(`user_${populated.user ? populated.user._id : 'unknown'}`).emit('bookingCreated', { booking: populated });
+                
+                // Emit seat update for the specific schedule
+                io.to(`schedule_${req.body.schedule}`).emit('seatsUpdated', {
+                    scheduleId: req.body.schedule,
+                    bookedSeats: schedule.bookedSeats.concat(seatNumbers),
+                    availableSeats: schedule.availableSeats - seatCount
+                });
             } catch (emitErr) {
                 // Socket might not be initialized in some environments; ignore errors
                 console.warn('Socket emit skipped (not initialized):', emitErr.message);
@@ -417,9 +469,10 @@ class BookingController {
             booking.status = 'cancelled';
             await booking.save();
             
-            // Return seats to schedule
+            // Return seats to schedule and remove from bookedSeats array
             await Schedule.findByIdAndUpdate(booking.schedule._id, {
-                $inc: { availableSeats: booking.seats }
+                $inc: { availableSeats: booking.seats },
+                $pull: { bookedSeats: { $in: booking.seatNumbers || [] } }
             });
             
             // Update passenger manifest for this schedule
@@ -432,6 +485,19 @@ class BookingController {
             }
             
             console.log(`Booking ${id} cancelled successfully. ${booking.seats} seats returned to schedule.`);
+            
+            // Emit real-time seat update
+            try {
+                const io = getIo();
+                const updatedSchedule = await Schedule.findById(booking.schedule._id);
+                io.to(`schedule_${booking.schedule._id}`).emit('seatsUpdated', {
+                    scheduleId: booking.schedule._id,
+                    bookedSeats: updatedSchedule.bookedSeats || [],
+                    availableSeats: updatedSchedule.availableSeats
+                });
+            } catch (emitErr) {
+                console.warn('Socket emit skipped (not initialized):', emitErr.message);
+            }
             
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.status(200).json({
@@ -455,6 +521,33 @@ class BookingController {
             } else {
                 res.redirect(`/user/${req.params.userId}/bookings?error=${encodeURIComponent(errorMessage)}`);
             }
+        }
+    }
+
+    // Get seat availability for a schedule
+    async getSeatAvailability(req, res) {
+        try {
+            const { scheduleId } = req.params;
+            
+            const schedule = await Schedule.findById(scheduleId);
+            
+            if (!schedule) {
+                return res.status(404).json({ message: 'Schedule not found' });
+            }
+            
+            res.status(200).json({
+                scheduleId: schedule._id,
+                totalSeats: schedule.capacity,
+                availableSeats: schedule.availableSeats,
+                bookedSeats: schedule.bookedSeats || [],
+                bookedCount: schedule.bookedSeats ? schedule.bookedSeats.length : 0
+            });
+        } catch (error) {
+            console.error('Error fetching seat availability:', error);
+            res.status(500).json({
+                message: 'Error fetching seat availability',
+                error: error.message
+            });
         }
     }
 }

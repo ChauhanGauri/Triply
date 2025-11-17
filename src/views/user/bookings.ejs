@@ -226,6 +226,12 @@
                             <%= booking.seats || booking.passengers || 1 %> 
                             <%= (booking.seats || booking.passengers || 1) === 1 ? 'seat' : 'seats' %>
                           </span>
+                          <% if (booking.seatNumbers && booking.seatNumbers.length > 0) { %>
+                            <br>
+                            <small class="text-muted">
+                              Seats: <%= booking.seatNumbers.sort((a, b) => a - b).join(', ') %>
+                            </small>
+                          <% } %>
                           <% if (booking.passengers && booking.passengers.length > 0) { %>
                             <br>
                             <small class="text-muted">

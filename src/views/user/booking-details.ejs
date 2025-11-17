@@ -6,6 +6,7 @@
   <title><%= title || "Booking Details" %></title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <script src="/socket.io/socket.io.js"></script>
   <style>
     body {
       background: #1E293B;
@@ -137,6 +138,116 @@
         opacity: 1;
         transform: translateX(0);
       }
+    }
+
+    /* Seat Selection Styles */
+    .seat-layout-container {
+      background: #F8FAFC;
+      border-radius: 15px;
+      padding: 2rem;
+      border: 2px solid #E2E8F0;
+    }
+
+    .driver-section {
+      display: flex;
+      justify-content: flex-end;
+      padding-right: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .driver-icon {
+      background: #1E293B;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .seat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .seat {
+      aspect-ratio: 1;
+      border: 2px solid #CBD5E1;
+      border-radius: 10px;
+      background: #FFFFFF;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #64748B;
+      position: relative;
+    }
+
+    .seat.available:hover {
+      background: #E0F2FE;
+      border-color: #0EA5E9;
+      transform: scale(1.05);
+      color: #0EA5E9;
+    }
+
+    .seat.selected {
+      background: #10B981;
+      border-color: #059669;
+      color: white;
+      transform: scale(1.05);
+    }
+
+    .seat.booked {
+      background: #64748B;
+      border-color: #475569;
+      color: white;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .seat-legend {
+      display: flex;
+      gap: 2rem;
+      justify-content: center;
+      padding-top: 1rem;
+      border-top: 2px solid #E2E8F0;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      color: #64748B;
+    }
+
+    .seat-demo {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      border: 2px solid #CBD5E1;
+    }
+
+    .seat-demo.available {
+      background: #FFFFFF;
+      border-color: #CBD5E1;
+    }
+
+    .seat-demo.selected {
+      background: #10B981;
+      border-color: #059669;
+    }
+
+    .seat-demo.booked {
+      background: #64748B;
+      border-color: #475569;
     }
   </style>
 </head>
@@ -284,6 +395,47 @@
                   <input type="tel" class="form-control" id="contactPhone" name="contactPhone" 
                          placeholder="Your contact number" required>
                 </div>
+              </div>
+
+              <!-- Seat Selection -->
+              <div class="mb-4">
+                <label class="form-label"><i class="bi bi-grid-3x3"></i> Select Your Seats *</label>
+                <div class="alert alert-info">
+                  <i class="bi bi-info-circle"></i> Please select <span id="requiredSeatsCount">1</span> seat(s).
+                  Selected: <span id="selectedSeatsCount">0</span>
+                </div>
+                
+                <div class="seat-layout-container">
+                  <!-- Bus Driver Section -->
+                  <div class="driver-section mb-3">
+                    <div class="driver-icon">
+                      <i class="bi bi-person-circle fs-4"></i> Driver
+                    </div>
+                  </div>
+
+                  <!-- Seat Grid -->
+                  <div class="seat-grid">
+                    <!-- Seats will be generated dynamically -->
+                  </div>
+
+                  <!-- Legend -->
+                  <div class="seat-legend mt-3">
+                    <div class="legend-item">
+                      <div class="seat-demo available"></div>
+                      <span>Available</span>
+                    </div>
+                    <div class="legend-item">
+                      <div class="seat-demo selected"></div>
+                      <span>Selected</span>
+                    </div>
+                    <div class="legend-item">
+                      <div class="seat-demo booked"></div>
+                      <span>Booked</span>
+                    </div>
+                  </div>
+                </div>
+
+                <input type="hidden" name="seatNumbers" id="seatNumbersInput">
               </div>
 
               <!-- Passenger Details Container -->
@@ -512,6 +664,14 @@
           }
         });
 
+        // Validate seat selection
+        const requiredSeats = parseInt(passengerCountSelect.value) || 1;
+        if (selectedSeats.length !== requiredSeats) {
+          e.preventDefault();
+          alert(`Please select exactly ${requiredSeats} seat(s) before proceeding.`);
+          return false;
+        }
+
         if (!allValid) {
           e.preventDefault();
           alert('Please fill in all passenger details.');
@@ -520,6 +680,141 @@
           LocalStorageManager.clearBookingFormDraft();
         }
       });
+
+      // Seat Selection Logic
+      const seatGrid = document.querySelector('.seat-grid');
+      const seatNumbersInput = document.getElementById('seatNumbersInput');
+      const selectedSeatsCountSpan = document.getElementById('selectedSeatsCount');
+      const requiredSeatsCountSpan = document.getElementById('requiredSeatsCount');
+      
+      let selectedSeats = [];
+      let bookedSeats = [];
+      let currentScheduleId = scheduleData.scheduleId;
+      const totalSeats = 40;
+
+      async function loadSeatAvailability(scheduleId) {
+        try {
+          console.log('Loading seat availability for schedule:', scheduleId);
+          const response = await fetch(`/api/bookings/schedule/${scheduleId}/seats`);
+          const data = await response.json();
+          console.log('Seat data received:', data);
+          bookedSeats = data.bookedSeats || [];
+          renderSeats();
+        } catch (error) {
+          console.error('Error loading seat availability:', error);
+          bookedSeats = [];
+          renderSeats();
+        }
+      }
+
+      function renderSeats() {
+        console.log('Rendering seats. Booked:', bookedSeats, 'Selected:', selectedSeats);
+        seatGrid.innerHTML = '';
+        for (let i = 1; i <= totalSeats; i++) {
+          const seat = document.createElement('div');
+          seat.className = 'seat';
+          seat.textContent = i;
+          seat.dataset.seatNumber = i;
+          
+          if (bookedSeats.includes(i)) {
+            seat.classList.add('booked');
+          } else if (selectedSeats.includes(i)) {
+            seat.classList.add('selected');
+          } else {
+            seat.classList.add('available');
+          }
+          
+          seat.addEventListener('click', handleSeatClick);
+          seatGrid.appendChild(seat);
+        }
+        console.log('Rendered', totalSeats, 'seats');
+      }
+
+      function handleSeatClick(event) {
+        const seatNumber = parseInt(event.target.dataset.seatNumber);
+        const requiredSeats = parseInt(passengerCountSelect.value) || 1;
+        
+        // Can't select booked seats
+        if (bookedSeats.includes(seatNumber)) {
+          return;
+        }
+        
+        // Toggle selection
+        if (selectedSeats.includes(seatNumber)) {
+          selectedSeats = selectedSeats.filter(s => s !== seatNumber);
+        } else {
+          // Check if we can add more seats
+          if (selectedSeats.length < requiredSeats) {
+            selectedSeats.push(seatNumber);
+            selectedSeats.sort((a, b) => a - b);
+          } else {
+            alert(`You can only select ${requiredSeats} seat(s). Deselect a seat first.`);
+            return;
+          }
+        }
+        
+        updateSeatSelection();
+        renderSeats();
+      }
+
+      function updateSeatSelection() {
+        selectedSeatsCountSpan.textContent = selectedSeats.length;
+        seatNumbersInput.value = selectedSeats.join(',');
+      }
+
+      function resetSeatSelection() {
+        selectedSeats = [];
+        updateSeatSelection();
+        renderSeats();
+      }
+
+      passengerCountSelect.addEventListener('change', function() {
+        const savedData = LocalStorageManager.getBookingFormDraft();
+        const requiredSeats = parseInt(this.value) || 1;
+        requiredSeatsCountSpan.textContent = requiredSeats;
+        
+        generatePassengerForms(parseInt(this.value), savedData);
+        calculateTotalPrice();
+        saveFormDraft(); // Save after passenger count change
+        
+        // Reset seat selection when passenger count changes
+        resetSeatSelection();
+      });
+
+      // Socket.IO for real-time seat updates
+      const socket = io();
+      
+      socket.on('connect', () => {
+        console.log('Connected to real-time updates');
+        if (currentScheduleId) {
+          socket.emit('joinSchedule', currentScheduleId);
+        }
+      });
+
+      socket.on('seatsUpdated', (data) => {
+        if (data.scheduleId === currentScheduleId) {
+          console.log('Seats updated in real-time:', data);
+          bookedSeats = data.bookedSeats || [];
+          
+          // Remove any selected seats that are now booked
+          selectedSeats = selectedSeats.filter(seat => !bookedSeats.includes(seat));
+          updateSeatSelection();
+          renderSeats();
+          
+          // Show notification
+          const toast = document.createElement('div');
+          toast.className = 'alert alert-warning position-fixed top-0 end-0 m-3';
+          toast.style.zIndex = '9999';
+          toast.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Seat availability updated!';
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 3000);
+        }
+      });
+
+      // Load initial seat availability
+      if (currentScheduleId) {
+        loadSeatAvailability(currentScheduleId);
+      }
     });
   </script>
     </div>

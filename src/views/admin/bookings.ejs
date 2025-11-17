@@ -456,7 +456,12 @@
               </tr>
               <tr>
                 <td><strong>Seats:</strong></td>
-                <td>${booking.seats || 'N/A'}</td>
+                <td>
+                  ${booking.seats || 'N/A'}
+                  ${booking.seatNumbers && booking.seatNumbers.length > 0 ? 
+                    `<br><small class="text-muted">Seat Numbers: ${booking.seatNumbers.sort((a, b) => a - b).join(', ')}</small>` : 
+                    ''}
+                </td>
               </tr>
               <tr>
                 <td><strong>Booked At:</strong></td>
