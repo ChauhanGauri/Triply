@@ -10,6 +10,7 @@ const { RedisStore } = require('connect-redis');
 const { connectRedis, getRedisClient, isRedisReady } = require('./src/config/redis');
 const methodOverride = require("method-override");
 const path = require("path");
+const ensureAdminSeed = require('./src/utils/ensureAdmin');
 
 const app = express();
 
@@ -76,7 +77,14 @@ app.set("views", path.join(__dirname, "src", "views")); // views folder inside s
 // MongoDB connection
 mongoose
   .connect(process.env.MONGO_URI || 'mongodb://localhost:27017/transport-management')
-  .then(() => console.log("✅ MongoDB connected"))
+  .then(async () => {
+    console.log("✅ MongoDB connected");
+    try {
+      await ensureAdminSeed();
+    } catch (error) {
+      console.warn('⚠️ Unable to seed default admin automatically:', error.message);
+    }
+  })
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 // Default route - show home or redirect based on session
