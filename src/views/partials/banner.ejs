@@ -1,0 +1,49 @@
+<% /* Unified Triply banner/header. Attempts to resolve a user object from various view locals. */ %>
+<% const u = typeof user !== 'undefined' && user ? user
+  : (typeof currentUser !== 'undefined' && currentUser ? currentUser
+  : (typeof admin !== 'undefined' && admin ? admin
+  : (typeof data !== 'undefined' && data && data.user ? data.user : null))); %>
+
+<header class="user-header">
+  <div class="container">
+    <div class="row align-items-center">
+      <div class="col">
+        <a href="/<%= u && u.role === 'admin' ? 'admin/dashboard' : (u && u.role === 'user' ? 'user/' + u.id + '/dashboard' : '') %>" class="text-decoration-none">
+          <h1 class="user-title mb-1">
+            <i class="bi bi-bus-front me-3"></i>
+            Triply
+          </h1>
+        </a>
+        <p class="mb-0 opacity-75">
+          <% if (!u) { %>
+            Welcome Guest
+          <% } else if (u.role === 'admin') { %>
+            Admin Panel
+          <% } else { %>
+            <%= u.name %>
+          <% } %>
+        </p>
+      </div>
+      <div class="col-auto">
+        <div class="d-flex gap-2 flex-wrap">
+          <% if (!u) { %>
+            <a href="/auth/user/login" class="btn-custom"><i class="bi bi-box-arrow-in-right"></i> User Login</a>
+            <a href="/auth/admin/login" class="btn-outline-custom"><i class="bi bi-person-gear"></i> Admin Login</a>
+          <% } else if (u.role === 'admin') { %>
+            <a href="/admin/bookings" class="btn-custom"><i class="bi bi-ticket-detailed"></i> Bookings</a>
+            <a href="/admin/routes" class="btn-custom"><i class="bi bi-map"></i> Routes</a>
+            <a href="/admin/schedules" class="btn-custom"><i class="bi bi-calendar-event"></i> Schedules</a>
+            <a href="/admin/users" class="btn-custom"><i class="bi bi-people"></i> Users</a>
+            <a href="/auth/logout" class="btn-outline-custom"><i class="bi bi-box-arrow-right"></i> Logout</a>
+          <% } else { %>
+            <a href="/user/<%= u.id %>/bookings/new" class="btn-custom"><i class="bi bi-plus-circle"></i> New Booking</a>
+            <a href="/schedules" class="btn-custom"><i class="bi bi-calendar-week"></i> Schedules</a>
+            <a href="/user/routes" class="btn-custom"><i class="bi bi-map"></i> Routes</a>
+            <a href="/user/profile" class="btn-custom"><i class="bi bi-person-gear"></i> Profile</a>
+            <a href="/auth/logout" class="btn-outline-custom"><i class="bi bi-box-arrow-right"></i> Logout</a>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>

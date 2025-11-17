@@ -134,6 +134,47 @@ class ScheduleController {
             });
         }
     }
+
+    // Public browse schedules page
+    async browseSchedules(req, res) {
+        try {
+            const now = new Date();
+            now.setHours(0, 0, 0, 0); // Start of today to show all schedules for today
+            
+            console.log('🔍 Browsing schedules - Current date:', now);
+            
+            const schedules = await Schedule.find({
+                isActive: true,
+                availableSeats: { $gt: 0 },
+                journeyDate: { $gte: now }
+            })
+            .populate('route', 'routeNumber origin destination fare')
+            .sort({ journeyDate: 1, departureTime: 1 });
+
+            console.log(`📋 Found ${schedules.length} schedules for users`);
+            if (schedules.length > 0) {
+                console.log('Sample schedule:', {
+                    id: schedules[0]._id,
+                    journeyDate: schedules[0].journeyDate,
+                    isActive: schedules[0].isActive,
+                    availableSeats: schedules[0].availableSeats,
+                    route: schedules[0].route
+                });
+            }
+
+            res.render('public/schedules', {
+                title: 'Browse Schedules',
+                schedules
+            });
+        } catch (error) {
+            console.error('Error loading public schedules:', error);
+            res.status(500).render('error', {
+                title: 'Error',
+                message: 'Error loading schedules',
+                error
+            });
+        }
+    }
 }
 
 module.exports = new ScheduleController();
