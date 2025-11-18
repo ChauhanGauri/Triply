@@ -6,6 +6,7 @@
   <title><%= title || "My Bookings Dashboard" %></title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/css/modern-theme.css">
   <style>
     /* Global overflow prevention */
     html, body {
@@ -18,42 +19,63 @@
       width: 100%;
     }
     body {
-      background: #1E293B;
+      background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
       min-height: 100vh;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       color: #1E293B;
     }
 
     .dashboard-container {
-      background: #FFFFFF;
+      background: rgba(255, 255, 255, 0.95);
       min-height: 100vh;
       border-radius: 20px 0 0 20px;
-      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3);
       animation: slideIn 0.8s ease-out;
     }
 
     .user-header {
-      background: #1E293B;
+      background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
       color: white;
       padding: 2rem 0;
       border-radius: 20px 0 0 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .user-header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+      animation: float 20s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      33% { transform: translate(30px, -30px) rotate(120deg); }
+      66% { transform: translate(-30px, 30px) rotate(240deg); }
     }
 
     .user-title {
-      background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+      background: linear-gradient(135deg, #FFFFFF 0%, #CBD5E1 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
       font-weight: 700;
       font-size: 2.5rem;
       margin-bottom: 0.5rem;
+      position: relative;
+      z-index: 1;
     }
 
     .btn-custom {
-      background: linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       border: none;
       border-radius: 10px;
-      padding: 0.5rem 1rem;
+      padding: 0.75rem 1.5rem;
       font-weight: 600;
       color: white;
       transition: all 0.3s ease;
@@ -61,35 +83,39 @@
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
+      position: relative;
+      z-index: 1;
     }
 
     .btn-custom:hover {
-      background: linear-gradient(135deg, #DB2777 0%, #D97706 100%);
+      background: linear-gradient(135deg, #5a67d8 0%, #6b46a0 100%);
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(236, 72, 153, 0.3);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
       color: white;
       text-decoration: none;
     }
 
     .btn-outline-custom {
       background: transparent;
-      border: 2px solid #EC4899;
-      color: #EC4899;
+      border: 2px solid #667eea;
+      color: #667eea;
       border-radius: 10px;
-      padding: 0.5rem 1rem;
+      padding: 0.75rem 1.5rem;
       font-weight: 600;
       transition: all 0.3s ease;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
+      position: relative;
+      z-index: 1;
     }
 
     .btn-outline-custom:hover {
-      background: #EC4899;
+      background: #667eea;
       color: white;
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(236, 72, 153, 0.3);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
       text-decoration: none;
     }
 
@@ -97,7 +123,7 @@
       background: #FFFFFF;
       border: 2px solid #F1F5F9;
       border-radius: 16px;
-      padding: 1.25rem;
+      padding: 1.5rem;
       transition: all 0.3s ease;
       box-shadow: 0 4px 12px rgba(30, 41, 59, 0.08);
       position: relative;
@@ -111,14 +137,14 @@
       left: 0;
       width: 4px;
       height: 100%;
-      background: linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       transition: width 0.3s ease;
     }
 
     .stat-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 8px 25px rgba(30, 41, 59, 0.12);
-      border-color: #EC4899;
+      border-color: #667eea;
     }
 
     .stat-card:hover::before {
@@ -126,20 +152,20 @@
     }
 
     .stat-icon {
-      width: 45px;
-      height: 45px;
-      background: linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
-      font-size: 1.25rem;
+      font-size: 1.5rem;
       margin-bottom: 0.75rem;
     }
 
     .stat-value {
-      font-size: 2rem;
+      font-size: 2.25rem;
       font-weight: 700;
       color: #1E293B;
       margin-bottom: 0.125rem;
@@ -166,7 +192,7 @@
       color: #1E293B;
       font-weight: 600;
       margin-bottom: 0.75rem;
-      font-size: 1.1rem;
+      font-size: 1.2rem;
     }
 
     .table {
@@ -177,11 +203,11 @@
     }
 
     .table thead th {
-      background: #F8FAFC;
+      background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
       border-bottom: 2px solid #E2E8F0;
       color: #1E293B;
       font-weight: 600;
-      padding: 0.75rem;
+      padding: 1rem 0.75rem;
     }
 
     .table tbody td {
@@ -191,7 +217,7 @@
     }
 
     .table-hover tbody tr:hover {
-      background-color: #FEF3C7;
+      background-color: rgba(102, 126, 234, 0.05);
     }
 
     /* Table column widths for responsive layout */
