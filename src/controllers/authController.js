@@ -1,5 +1,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const emailService = require('../utils/emailService');
+const crypto = require('crypto');
 
 class AuthController {
     // Render admin login page
@@ -224,6 +226,152 @@ class AuthController {
                 error: error.message 
             });
         }
+    }
+
+    // Request password reset
+    async forgotPassword(req, res) {
+        try {
+            const { email } = req.body;
+
+            if (!email) {
+                if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                    return res.status(400).json({ message: 'Email is required' });
+                }
+                return res.redirect('/auth/forgot-password?error=Email is required');
+            }
+
+            // Find user by email
+            const user = await User.findOne({ email, isActive: true });
+            
+            // Don't reveal if user exists or not for security
+            const successMessage = 'If that email exists, we sent a password reset link';
+            
+            if (user) {
+                // Generate reset token
+                const resetToken = user.createPasswordResetToken();
+                await user.save({ validateBeforeSave: false });
+
+                // Send reset email
+                try {
+                    await emailService.sendPasswordResetEmail(user, resetToken);
+                    console.log('✅ Password reset email sent to:', email);
+                } catch (emailError) {
+                    console.error('❌ Error sending password reset email:', emailError);
+                    // Clear the reset token if email fails
+                    user.resetPasswordToken = undefined;
+                    user.resetPasswordExpires = undefined;
+                    await user.save({ validateBeforeSave: false });
+                    
+                    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                        return res.status(500).json({ 
+                            message: 'Error sending email. Please try again later.' 
+                        });
+                    }
+                    return res.redirect('/auth/forgot-password?error=Error sending email. Please try again later.');
+                }
+            }
+
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                res.json({ message: successMessage });
+            } else {
+                res.redirect(`/auth/forgot-password?success=${encodeURIComponent(successMessage)}`);
+            }
+        } catch (error) {
+            console.error('Forgot password error:', error);
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                res.status(500).json({ message: 'An error occurred. Please try again.' });
+            } else {
+                res.redirect('/auth/forgot-password?error=An error occurred. Please try again.');
+            }
+        }
+    }
+
+    // Reset password with token
+    async resetPassword(req, res) {
+        try {
+            const { token } = req.params;
+            const { password, confirmPassword } = req.body;
+
+            if (!password || !confirmPassword) {
+                if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                    return res.status(400).json({ message: 'Password and confirmation are required' });
+                }
+                return res.redirect(`/auth/reset-password/${token}?error=Password and confirmation are required`);
+            }
+
+            if (password !== confirmPassword) {
+                if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                    return res.status(400).json({ message: 'Passwords do not match' });
+                }
+                return res.redirect(`/auth/reset-password/${token}?error=Passwords do not match`);
+            }
+
+            if (password.length < 6) {
+                if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                    return res.status(400).json({ message: 'Password must be at least 6 characters' });
+                }
+                return res.redirect(`/auth/reset-password/${token}?error=Password must be at least 6 characters`);
+            }
+
+            // Hash the token to compare with database
+            const hashedToken = crypto
+                .createHash('sha256')
+                .update(token)
+                .digest('hex');
+
+            // Find user with valid token
+            const user = await User.findOne({
+                resetPasswordToken: hashedToken,
+                resetPasswordExpires: { $gt: Date.now() }
+            });
+
+            if (!user) {
+                if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                    return res.status(400).json({ message: 'Invalid or expired reset token' });
+                }
+                return res.redirect('/auth/forgot-password?error=Invalid or expired reset token');
+            }
+
+            // Update password
+            user.password = password;
+            user.resetPasswordToken = undefined;
+            user.resetPasswordExpires = undefined;
+            await user.save();
+
+            console.log('✅ Password reset successful for:', user.email);
+
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                res.json({ message: 'Password reset successful. You can now login.' });
+            } else {
+                const loginUrl = user.role === 'admin' ? '/auth/admin/login' : '/auth/user/login';
+                res.redirect(`${loginUrl}?success=Password reset successful. You can now login.`);
+            }
+        } catch (error) {
+            console.error('Reset password error:', error);
+            if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                res.status(500).json({ message: 'An error occurred. Please try again.' });
+            } else {
+                res.redirect('/auth/forgot-password?error=An error occurred. Please try again.');
+            }
+        }
+    }
+
+    // Render forgot password page
+    renderForgotPassword(req, res) {
+        res.render('auth/forgot-password', {
+            title: 'Forgot Password',
+            error: req.query.error || null,
+            success: req.query.success || null
+        });
+    }
+
+    // Render reset password page
+    renderResetPassword(req, res) {
+        res.render('auth/reset-password', {
+            title: 'Reset Password',
+            token: req.params.token,
+            error: req.query.error || null
+        });
     }
 }
 

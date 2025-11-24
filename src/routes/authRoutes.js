@@ -23,6 +23,12 @@ router.get('/logout', authController.logout);
 // Check authentication status (API)
 router.get('/check', authController.checkAuth);
 
+// Password reset routes
+router.get('/forgot-password', authController.renderForgotPassword);
+router.post('/forgot-password', authController.forgotPassword);
+router.get('/reset-password/:token', authController.renderResetPassword);
+router.post('/reset-password/:token', authController.resetPassword);
+
 // Create default admin (for testing)
 router.get('/create-admin', authController.createDefaultAdmin);
 

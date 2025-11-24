@@ -2,6 +2,7 @@ const Booking = require('../models/Booking');
 const Schedule = require('../models/Schedule');
 const PassengerManifest = require('../models/PassengerManifest');
 const { getIo } = require('../config/socket');
+const emailService = require('../utils/emailService');
 
 class BookingController {
     async createBooking(req, res) {
@@ -106,6 +107,39 @@ class BookingController {
             }
             
             console.log(`Booking created successfully for ${seatCount} seats`);
+            
+            // Send booking confirmation emails
+            try {
+                const populatedBooking = await Booking.findById(newBooking._id)
+                    .populate('user')
+                    .populate({
+                        path: 'schedule',
+                        populate: { path: 'route' }
+                    });
+
+                if (populatedBooking && populatedBooking.user && populatedBooking.schedule && populatedBooking.schedule.route) {
+                    // Send confirmation email to customer
+                    await emailService.sendBookingConfirmation(
+                        populatedBooking,
+                        populatedBooking.user,
+                        populatedBooking.schedule,
+                        populatedBooking.schedule.route
+                    );
+                    console.log('✅ Booking confirmation email sent to user');
+
+                    // Send notification email to admin
+                    await emailService.sendAdminBookingNotification(
+                        populatedBooking,
+                        populatedBooking.user,
+                        populatedBooking.schedule,
+                        populatedBooking.schedule.route
+                    );
+                    console.log('✅ Admin notification email sent');
+                }
+            } catch (emailError) {
+                console.error('❌ Error sending booking emails:', emailError);
+                // Continue even if email fails - booking is already created
+            }
             
             // Emit realtime update to admins and specific user room
             try {
