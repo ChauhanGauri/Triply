@@ -1,4 +1,6 @@
 ﻿const Schedule = require('../models/Schedule');
+const Booking = require('../models/Booking');
+const emailService = require('../utils/emailService');
 
 class ScheduleController {
     async createSchedule(req, res) {
@@ -95,6 +97,9 @@ class ScheduleController {
             const { id } = req.params;
             console.log('Updating schedule with ID:', id);
             
+            // Get old schedule before update
+            const oldSchedule = await Schedule.findById(id).populate('route');
+            
             const updatedSchedule = await Schedule.findByIdAndUpdate(id, req.body, { 
                 new: true,
                 runValidators: true
@@ -102,6 +107,36 @@ class ScheduleController {
             
             if (!updatedSchedule) {
                 return res.status(404).json({ message: "Schedule not found" });
+            }
+            
+            // Check if critical fields changed (time or status)
+            const timeChanged = oldSchedule && (
+                oldSchedule.departureTime !== updatedSchedule.departureTime ||
+                oldSchedule.arrivalTime !== updatedSchedule.arrivalTime
+            );
+            const statusChanged = oldSchedule && oldSchedule.isActive !== updatedSchedule.isActive;
+            
+            // Send email notifications if schedule changed
+            if (timeChanged || statusChanged) {
+                try {
+                    // Find all bookings for this schedule
+                    const affectedBookings = await Booking.find({ 
+                        schedule: id,
+                        status: { $in: ['confirmed', 'pending'] }
+                    }).populate('userId');
+                    
+                    if (affectedBookings.length > 0) {
+                        await emailService.sendScheduleChangeAlert(
+                            updatedSchedule,
+                            updatedSchedule.route,
+                            affectedBookings
+                        );
+                        console.log(`✅ Schedule change alerts sent to ${affectedBookings.length} passengers`);
+                    }
+                } catch (emailError) {
+                    console.error('❌ Error sending schedule change emails:', emailError);
+                    // Continue even if email fails
+                }
             }
             
             res.status(200).json({ 

@@ -7,7 +7,9 @@ const userSchema = new mongoose.Schema({
     phone: { type: String, required: true },
     password: { type: String, required: true },
     role: { type: String, enum: ['user', 'admin'], default: 'user' },
-    isActive: { type: Boolean, default: true }
+    isActive: { type: Boolean, default: true },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date }
 }, { timestamps: true });
 
 // Hash password before saving
@@ -32,7 +34,24 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 userSchema.methods.toJSON = function() {
     const userObject = this.toObject();
     delete userObject.password;
+    delete userObject.resetPasswordToken;
+    delete userObject.resetPasswordExpires;
     return userObject;
+};
+
+// Generate password reset token
+userSchema.methods.createPasswordResetToken = function() {
+    const crypto = require('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    
+    this.resetPasswordToken = crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+    
+    this.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
+    
+    return resetToken;
 };
 
 module.exports = mongoose.model('User', userSchema);

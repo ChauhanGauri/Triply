@@ -4,12 +4,6 @@ const { isAuthenticated, isAdmin, apiAuth, apiAdminAuth } = require('../middlewa
 
 const router = express.Router();
 
-// Debug middleware to log all requests to this router
-router.use((req, res, next) => {
-    console.log(`Passenger Manifest Route accessed: ${req.method} ${req.originalUrl}`);
-    next();
-});
-
 // Admin manifest routes (protected)
 router.get('/admin/manifests', isAuthenticated, isAdmin, passengerManifestController.getAllManifests);
 router.get('/admin/manifests/:manifestId', isAuthenticated, isAdmin, passengerManifestController.getManifestById);

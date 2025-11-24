@@ -9,13 +9,6 @@ const { getRedisClient } = require('../config/redis');
 
 const router = express.Router();
 
-// Debug middleware to log all requests to this router
-router.use((req, res, next) => {
-    console.log(`Dashboard Route accessed: ${req.method} ${req.originalUrl}`);
-    console.log('User session:', req.session.user);
-    next();
-});
-
 // Public browse schedules page (for all users - no auth required)
 router.get('/schedules', scheduleController.browseSchedules);
 router.get('/user/schedule', (req, res) => res.redirect('/schedules'));
@@ -73,9 +66,6 @@ router.get('/user/:userId/bookings/form', isAuthenticated, isUser, dashboardCont
 router.post('/user/:userId/bookings/process', isAuthenticated, isUser, dashboardController.processBooking);
 router.get('/user/:userId/bookings/payment', isAuthenticated, isUser, dashboardController.getPaymentPage);
 router.post('/user/:userId/bookings/confirm', isAuthenticated, isUser, bookingController.confirmBooking);
-
-// TEMPORARY: Test route to debug schedules without authentication
-router.get('/test/bookings/schedules', dashboardController.getNewBooking);
 
 router.post('/user/:userId/bookings', isAuthenticated, isUser, bookingController.createBooking);
 router.get('/user/:userId/bookings/:id', isAuthenticated, isUser, dashboardController.getBookingDetails);
