@@ -2,6 +2,8 @@
 require("dotenv").config();
 const express = require("express");
 const http = require('http');
+const https = require('https');
+const fs = require('fs');
 const { initSocket } = require('./src/config/socket');
 const mongoose = require("mongoose");
 const session = require("express-session");
@@ -60,9 +62,10 @@ const sessionMiddleware = session({
   saveUninitialized: false,
     store: sessionStore,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // Enable HTTPS cookies in production
+    secure: process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: process.env.COOKIE_SAME_SITE || 'lax'
   }
 });
 
@@ -155,16 +158,82 @@ app.use((req, res) => {
   });
 });
 
-// Start server using HTTP so socket.io can attach
-const PORT = process.env.PORT || 3000;
-const server = http.createServer(app);
+// Security headers middleware
+app.use((req, res, next) => {
+  // HSTS (HTTP Strict Transport Security) - only in production with HTTPS
+  if (process.env.NODE_ENV === 'production' && process.env.HSTS_ENABLED === 'true') {
+    const maxAge = process.env.HSTS_MAX_AGE || 31536000; // 1 year default
+    res.setHeader('Strict-Transport-Security', `max-age=${maxAge}; includeSubDomains; preload`);
+  }
+  
+  // Security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  next();
+});
 
-  // initialize socket.io (after Redis connection) - pass session middleware
+// SSL/HTTPS Configuration
+const SSL_ENABLED = process.env.SSL_ENABLED === 'true';
+const PORT = process.env.PORT || 3000;
+const HTTPS_PORT = process.env.HTTPS_PORT || 3443;
+
+let server;
+
+if (SSL_ENABLED && process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH) {
+  try {
+    // Read SSL certificate files
+    const privateKey = fs.readFileSync(path.resolve(process.env.SSL_KEY_PATH), 'utf8');
+    const certificate = fs.readFileSync(path.resolve(process.env.SSL_CERT_PATH), 'utf8');
+    
+    const credentials = {
+      key: privateKey,
+      cert: certificate
+    };
+    
+    // Create HTTPS server
+    server = https.createServer(credentials, app);
+    console.log('✅ SSL/HTTPS enabled');
+    
+    // Optional: Create HTTP server that redirects to HTTPS
+    if (process.env.FORCE_HTTPS === 'true') {
+      const httpApp = express();
+      httpApp.use('*', (req, res) => {
+        const host = req.headers.host.replace(/:\d+$/, ''); // Remove port
+        const httpsPort = HTTPS_PORT === 443 ? '' : `:${HTTPS_PORT}`;
+        res.redirect(301, `https://${host}${httpsPort}${req.url}`);
+      });
+      
+      const httpServer = http.createServer(httpApp);
+      httpServer.listen(PORT, () => {
+        console.log(`🔀 HTTP redirect server running on port ${PORT} → HTTPS ${HTTPS_PORT}`);
+      });
+    }
+  } catch (error) {
+    console.error('❌ SSL certificate error:', error.message);
+    console.log('⚠️  Falling back to HTTP mode');
+    server = http.createServer(app);
+  }
+} else {
+  // Create HTTP server
+  server = http.createServer(app);
+  if (SSL_ENABLED) {
+    console.log('⚠️  SSL_ENABLED is true but certificate paths are missing');
+  }
+  console.log('ℹ️  Running in HTTP mode');
+}
+
+// Initialize socket.io (after Redis connection) - pass session middleware
 initSocket(server, sessionMiddleware);
 
-server.listen(PORT, () => {
-  console.log(`✅ Server is running on port ${PORT}`);
-  });
+// Start server
+const listenPort = SSL_ENABLED && server instanceof https.Server ? HTTPS_PORT : PORT;
+server.listen(listenPort, () => {
+  const protocol = SSL_ENABLED && server instanceof https.Server ? 'https' : 'http';
+  console.log(`✅ Server running on ${protocol}://localhost:${listenPort}`);
+});
 }
 
 // Initialize Redis and start server
