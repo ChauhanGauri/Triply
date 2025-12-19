@@ -1,6 +1,7 @@
 const Booking = require('../models/Booking');
 const Schedule = require('../models/Schedule');
 const PassengerManifest = require('../models/PassengerManifest');
+const Route = require('../models/Route');
 const { getIo } = require('../config/socket');
 const emailService = require('../utils/emailService');
 
@@ -66,6 +67,16 @@ class BookingController {
                     return res.redirect(`/user/${req.params.userId}/bookings/new?error=${encodeURIComponent(errorMessage)}`);
                 }
             }
+
+            // Compute and store total price for booking if route fare is available
+            try {
+                const routeDoc = await Route.findById(schedule.route);
+                if (routeDoc && typeof routeDoc.fare === 'number') {
+                    req.body.totalPrice = routeDoc.fare * seatCount;
+                }
+            } catch (e) {
+                // ignore if route lookup fails; email will compute amount from route when populated
+            }
             
             // Check if any selected seats are already booked
             const alreadyBooked = seatNumbers.filter(seat => schedule.bookedSeats.includes(seat));
@@ -127,14 +138,14 @@ class BookingController {
                     );
                     console.log('✅ Booking confirmation email sent to user');
 
-                    // Send notification email to admin
-                    await emailService.sendAdminBookingNotification(
+                    // Send notification email to Triply Transport
+                    await emailService.sendTriplyBookingNotification(
                         populatedBooking,
                         populatedBooking.user,
                         populatedBooking.schedule,
                         populatedBooking.schedule.route
                     );
-                    console.log('✅ Admin notification email sent');
+                    console.log('✅ Booking notification email sent to triply.transport@gmail.com');
                 }
             } catch (emailError) {
                 console.error('❌ Error sending booking emails:', emailError);
@@ -297,6 +308,33 @@ class BookingController {
             if (!updatedBooking) {
                 return res.status(404).json({ message: "Booking not found" });
             }
+
+            // Send cancellation emails
+            try {
+                if (updatedBooking.user && updatedBooking.schedule && updatedBooking.schedule.route) {
+                    // Send cancellation email to customer
+                    await emailService.sendBookingCancellation(
+                        updatedBooking,
+                        updatedBooking.user,
+                        updatedBooking.schedule,
+                        updatedBooking.schedule.route
+                    );
+                    console.log('✅ Booking cancellation email sent to user');
+
+                    // Send notification email to Triply Transport
+                    await emailService.sendTriplyCancellationNotification(
+                        updatedBooking,
+                        updatedBooking.user,
+                        updatedBooking.schedule,
+                        updatedBooking.schedule.route
+                    );
+                    console.log('✅ Booking cancellation notification email sent to triply.transport@gmail.com');
+                }
+            } catch (emailError) {
+                console.error('❌ Error sending cancellation emails:', emailError);
+                // Continue even if email fails - booking is already cancelled
+            }
+
             // Emit bookingCancelled to the user who owns this booking
             try {
                 const io = getIo();
@@ -425,6 +463,39 @@ class BookingController {
                 // Continue with booking confirmation even if manifest fails
             }
             
+            // Send booking confirmation emails
+            try {
+                const populatedBooking = await Booking.findById(newBooking._id)
+                    .populate('user')
+                    .populate({
+                        path: 'schedule',
+                        populate: { path: 'route' }
+                    });
+
+                if (populatedBooking && populatedBooking.user && populatedBooking.schedule && populatedBooking.schedule.route) {
+                    // Send confirmation email to customer
+                    await emailService.sendBookingConfirmation(
+                        populatedBooking,
+                        populatedBooking.user,
+                        populatedBooking.schedule,
+                        populatedBooking.schedule.route
+                    );
+                    console.log('✅ Booking confirmation email sent to user');
+
+                    // Send notification email to Triply Transport
+                    await emailService.sendTriplyBookingNotification(
+                        populatedBooking,
+                        populatedBooking.user,
+                        populatedBooking.schedule,
+                        populatedBooking.schedule.route
+                    );
+                    console.log('✅ Booking notification email sent to triply.transport@gmail.com');
+                }
+            } catch (emailError) {
+                console.error('❌ Error sending booking emails:', emailError);
+                // Continue even if email fails - booking is already created
+            }
+            
             // Clear pending booking from session
             delete req.session.pendingBooking;
             
@@ -516,6 +587,40 @@ class BookingController {
             } catch (manifestError) {
                 console.error('Error updating passenger manifest after cancellation:', manifestError);
                 // Continue with cancellation even if manifest update fails
+            }
+
+            // Send cancellation emails
+            try {
+                // Populate user and route for email sending
+                const populatedBooking = await Booking.findById(booking._id)
+                    .populate('user')
+                    .populate({
+                        path: 'schedule',
+                        populate: { path: 'route' }
+                    });
+
+                if (populatedBooking && populatedBooking.user && populatedBooking.schedule && populatedBooking.schedule.route) {
+                    // Send cancellation email to customer
+                    await emailService.sendBookingCancellation(
+                        populatedBooking,
+                        populatedBooking.user,
+                        populatedBooking.schedule,
+                        populatedBooking.schedule.route
+                    );
+                    console.log('✅ Booking cancellation email sent to user');
+
+                    // Send notification email to Triply Transport
+                    await emailService.sendTriplyCancellationNotification(
+                        populatedBooking,
+                        populatedBooking.user,
+                        populatedBooking.schedule,
+                        populatedBooking.schedule.route
+                    );
+                    console.log('✅ Booking cancellation notification email sent to triply.transport@gmail.com');
+                }
+            } catch (emailError) {
+                console.error('❌ Error sending cancellation emails:', emailError);
+                // Continue even if email fails - booking is already cancelled
             }
             
             console.log(`Booking ${id} cancelled successfully. ${booking.seats} seats returned to schedule.`);
