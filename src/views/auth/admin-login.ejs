@@ -29,7 +29,7 @@
     /* Left Panel - Image */
     .left-panel {
       flex: 1;
-      background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+      background: #F59E0B;
       position: relative;
       display: flex;
       align-items: center;
@@ -45,7 +45,7 @@
       right: 0;
       bottom: 0;
       background: url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800') center/cover;
-      opacity: 0.25;
+      opacity: 0.5;
     }
 
     .left-content {
@@ -81,29 +81,7 @@
       line-height: 1.6;
     }
 
-    .carousel-indicators {
-      position: absolute;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 8px;
-    }
-
-    .carousel-indicators button {
-      width: 30px;
-      height: 4px;
-      background: rgba(255, 255, 255, 0.5);
-      border: none;
-      border-radius: 2px;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-
-    .carousel-indicators button.active {
-      background: white;
-      width: 40px;
-    }
+    
 
     /* Right Panel - Form */
     .right-panel {
@@ -169,6 +147,8 @@
       margin-bottom: 0.5rem;
       font-weight: 500;
       display: block;
+      margin-right: 0.75rem;
+      margin-top: 0.75rem;
     }
 
     .form-control {
@@ -262,11 +242,7 @@
         <h1>Admin Control Center</h1>
         <p>Manage routes, schedules, and monitor your entire transport system efficiently</p>
       </div>
-      <div class="carousel-indicators">
-        <button class="active"></button>
-        <button></button>
-        <button></button>
-      </div>
+      
     </div>
 
     <!-- Right Panel - Form -->
@@ -293,7 +269,7 @@
         
         <form action="/auth/admin/login" method="POST">
           <div class="input-group">
-            <label for="email" class="form-label">Admin Email</label>
+            <label for="email" class="form-label">Email</label>
             <input 
               type="email" 
               class="form-control" 
@@ -318,7 +294,7 @@
             >
           </div>
           
-          <button type="submit" class="btn btn-primary btn-login">
+          <button type="submit" class="btn btn-login">
             <i class="bi bi-box-arrow-in-right"></i> Login as Admin
           </button>
         </form>
@@ -347,12 +323,12 @@
     document.addEventListener('DOMContentLoaded', function() {
       const form = document.querySelector('form');
       const submitBtn = document.querySelector('.btn-login');
-      
       form.addEventListener('submit', function() {
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Authenticating...';
         submitBtn.disabled = true;
+        submitBtn.style.background = '#F59E0B';
+        submitBtn.style.color = 'white';
       });
-      
       document.querySelector('input[name="email"]').focus();
     });
   </script>
