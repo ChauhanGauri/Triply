@@ -29,7 +29,7 @@
     /* Left Panel - Image */
     .left-panel {
       flex: 1;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background:  #764ba2;
       position: relative;
       display: flex;
       align-items: center;
@@ -81,30 +81,6 @@
       line-height: 1.6;
     }
 
-    .carousel-indicators {
-      position: absolute;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 8px;
-    }
-
-    .carousel-indicators button {
-      width: 30px;
-      height: 4px;
-      background: rgba(255, 255, 255, 0.5);
-      border: none;
-      border-radius: 2px;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-
-    .carousel-indicators button.active {
-      background: white;
-      width: 40px;
-    }
-
     /* Right Panel - Form */
     .right-panel {
       flex: 1;
@@ -153,7 +129,7 @@
     }
 
     .login-header p a {
-      color: #667eea;
+      color: #764ba2;
       text-decoration: none;
       font-weight: 500;
     }
@@ -164,10 +140,13 @@
     
     .form-label {
       color: #cbd5e0;
-      font-size: 0.9rem;
+      font-size: 1.0rem;
       margin-bottom: 0.5rem;
       font-weight: 500;
       display: block;
+      margin-right: 0.75rem;
+      margin-top: 0.75rem;
+      
     }
 
     .form-control {
@@ -182,7 +161,7 @@
     }
     
     .form-control:focus {
-      border-color: #667eea;
+      border-color: #764ba2;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
       background: #1a202c;
       color: white;
@@ -194,7 +173,7 @@
     }
     
     .btn-login {
-      background: #667eea;
+      background:  #764ba2;
       border: none;
       border-radius: 8px;
       padding: 14px;
@@ -207,7 +186,7 @@
     }
     
     .btn-login:hover {
-      background: #5a67d8;
+      background:  #764ba2 ;
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
       color: white;
@@ -234,7 +213,7 @@
     }
 
     .checkbox-container label a {
-      color: #667eea;
+      color: #764ba2;
       text-decoration: none;
     }
 
@@ -330,6 +309,9 @@
         font-size: 1.8rem;
       }
     }
+    button[type="submit"]{
+      background-color: #764ba2;
+    }
   </style>
 </head>
 <body>
@@ -343,11 +325,7 @@
         <h1>Your Journey Starts Here</h1>
         <p>Book your tickets seamlessly and travel with comfort across the city</p>
       </div>
-      <div class="carousel-indicators">
-        <button class="active"></button>
-        <button></button>
-        <button></button>
-      </div>
+      
     </div>
 
     <!-- Right Panel - Form -->
@@ -401,7 +379,7 @@
             <label for="terms">I agree to the <a href="#">Terms & Conditions</a></label>
           </div>
           
-          <button type="submit" class="btn btn-primary btn-login">
+          <button type="submit" class="btn-login">
             Login to Dashboard
           </button>
         </form>
