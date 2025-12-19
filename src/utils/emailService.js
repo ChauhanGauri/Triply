@@ -45,7 +45,12 @@ class EmailService {
    */
   async sendBookingConfirmation(booking, user, schedule, route) {
     const subject = `Booking Confirmation - ${booking.bookingReference}`;
-    
+    const seatsCount = booking.seats || (Array.isArray(booking.seatNumbers) ? booking.seatNumbers.length : 1);
+    const totalAmount = (typeof booking.totalPrice === 'number') ? booking.totalPrice : (route && route.fare ? route.fare * seatsCount : null);
+    const totalDisplay = totalAmount !== null ? `₹${totalAmount}` : 'N/A';
+    const routeFrom = (route && (route.origin || route.startLocation)) || 'Unknown';
+    const routeTo = (route && (route.destination || route.endLocation)) || 'Unknown';
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -81,7 +86,7 @@ class EmailService {
               </div>
               <div class="detail-row">
                 <span class="detail-label">Route:</span>
-                <span class="detail-value">${route.startLocation} → ${route.endLocation}</span>
+                <span class="detail-value">${routeFrom} → ${routeTo}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Departure:</span>
@@ -97,11 +102,7 @@ class EmailService {
               </div>
               <div class="detail-row">
                 <span class="detail-label">Total Amount:</span>
-                <span class="detail-value"><strong>₹${booking.totalAmount || (schedule.fare * booking.seats)}</strong></span>
-              </div>
-              <div class="detail-row">
-                <span class="detail-label">Status:</span>
-                <span class="detail-value">${booking.status}</span>
+                <span class="detail-value"><strong>${totalDisplay}</strong></span>
               </div>
             </div>
 
@@ -129,26 +130,25 @@ class EmailService {
     `;
 
     const text = `
-Booking Confirmed!
+  Booking Confirmed!
 
-Dear ${user.name},
+  Dear ${user.name},
 
-Your booking has been confirmed with the following details:
+  Your booking has been confirmed with the following details:
 
-Booking Reference: ${booking.bookingReference}
-Route: ${route.startLocation} → ${route.endLocation}
-Departure: ${schedule.departureTime}
-Arrival: ${schedule.arrivalTime}
-Seats: ${booking.seats}
-Total Amount: ₹${booking.totalAmount || (schedule.fare * booking.seats)}
-Status: ${booking.status}
+  Booking Reference: ${booking.bookingReference}
+  Route: ${routeFrom} → ${routeTo}
+  Departure: ${schedule.departureTime}
+  Arrival: ${schedule.arrivalTime}
+  Seats: ${booking.seats}
+  Total Amount: ${totalDisplay}
 
-Important:
-- Arrive 15 minutes before departure
-- Carry valid ID proof
-- Keep booking reference handy
+  Important:
+  - Arrive 15 minutes before departure
+  - Carry valid ID proof
+  - Keep booking reference handy
 
-Thank you for choosing Triply Transport!
+  Thank you for choosing Triply Transport!
     `;
 
     return this.sendEmail({
@@ -241,113 +241,89 @@ Triply Transport
   }
 
   /**
-   * Send admin notification for new booking to all admin users
+   * Send booking notification to Triply Transport email
    */
-  async sendAdminBookingNotification(booking, user, schedule, route) {
-    try {
-      // Fetch all admin users from database
-      const User = require('../models/User');
-      const admins = await User.find({ role: 'admin', isActive: true }).select('email name');
-      
-      if (admins.length === 0) {
-        console.log('⚠️  No active admin users found to send notification');
-        return { success: false, message: 'No active admins' };
-      }
+  async sendTriplyBookingNotification(booking, user, schedule, route) {
+    const triplyEmail = 'triply.transport@gmail.com';
+    const subject = `New Booking: ${booking.bookingReference}`;
+    const seatsCount = booking.seats || (Array.isArray(booking.seatNumbers) ? booking.seatNumbers.length : 1);
+    const totalAmount = (typeof booking.totalPrice === 'number') ? booking.totalPrice : (route && route.fare ? route.fare * seatsCount : null);
+    const totalDisplay = totalAmount !== null ? `₹${totalAmount}` : 'N/A';
+    const routeFrom = (route && (route.origin || route.startLocation)) || 'Unknown';
+    const routeTo = (route && (route.destination || route.endLocation)) || 'Unknown';
 
-      const subject = `New Booking: ${booking.bookingReference}`;
-
-      const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: #2d3748; color: white; padding: 20px; text-align: center; }
-            .content { background: #f9f9f9; padding: 20px; }
-            .info-box { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #F59E0B; }
-            .button { display: inline-block; padding: 10px 20px; background: #F59E0B; color: white; text-decoration: none; border-radius: 5px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h2>🆕 New Booking Alert</h2>
-            </div>
-            <div class="content">
-              <p><strong>A new booking has been made on the system.</strong></p>
-              
-              <div class="info-box">
-                <h3>Booking Information</h3>
-                <p><strong>Reference:</strong> ${booking.bookingReference}</p>
-                <p><strong>Customer:</strong> ${user.name} (${user.email})</p>
-                <p><strong>Route:</strong> ${route.startLocation} → ${route.endLocation}</p>
-                <p><strong>Date:</strong> ${new Date(schedule.date).toLocaleDateString()}</p>
-                <p><strong>Departure:</strong> ${schedule.departureTime}</p>
-                <p><strong>Seats:</strong> ${booking.seats}</p>
-                <p><strong>Amount:</strong> ₹${booking.totalAmount || (schedule.fare * booking.seats)}</p>
-                <p><strong>Status:</strong> ${booking.status}</p>
-              </div>
-
-              <center>
-                <a href="${process.env.APP_URL || 'http://localhost:3000'}/admin/bookings" class="button">View in Dashboard</a>
-              </center>
-            </div>
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #2d3748; color: white; padding: 20px; text-align: center; }
+          .content { background: #f9f9f9; padding: 20px; }
+          .info-box { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #F59E0B; }
+          .button { display: inline-block; padding: 10px 20px; background: #F59E0B; color: white; text-decoration: none; border-radius: 5px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2>🆕 New Booking Alert</h2>
           </div>
-        </body>
-        </html>
-      `;
+          <div class="content">
+            <p><strong>A new booking has been made on the system.</strong></p>
+            
+            <div class="info-box">
+              <h3>Booking Information</h3>
+              <p><strong>Reference:</strong> ${booking.bookingReference}</p>
+              <p><strong>Customer:</strong> ${user.name} (${user.email})</p>
+              <p><strong>Route:</strong> ${routeFrom} → ${routeTo}</p>
+              <p><strong>Date:</strong> ${new Date(schedule.journeyDate || schedule.date || Date.now()).toLocaleDateString()}</p>
+              <p><strong>Departure:</strong> ${schedule.departureTime}</p>
+              <p><strong>Seats:</strong> ${booking.seats}</p>
+              <p><strong>Amount:</strong> ${totalDisplay}</p>
+            </div>
 
-      const text = `
-New Booking Alert
+            <center>
+              <a href="${process.env.APP_URL || 'http://localhost:3000'}/admin/bookings" class="button">View in Dashboard</a>
+            </center>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
 
-A new booking has been made:
+    const text = `
+    New Booking Alert
 
-Reference: ${booking.bookingReference}
-Customer: ${user.name} (${user.email})
-Route: ${route.startLocation} → ${route.endLocation}
-Departure: ${schedule.departureTime}
-Seats: ${booking.seats}
-Amount: ₹${booking.totalAmount || (schedule.fare * booking.seats)}
+    A new booking has been made:
 
-View details in admin dashboard.
-      `;
+    Reference: ${booking.bookingReference}
+    Customer: ${user.name} (${user.email})
+    Route: ${routeFrom} → ${routeTo}
+    Date: ${new Date(schedule.journeyDate || schedule.date || Date.now()).toLocaleDateString()}
+    Departure: ${schedule.departureTime}
+    Seats: ${booking.seats}
+    Amount: ${totalDisplay}
 
-      // Send email to all admins
-      const emailPromises = admins.map(admin => 
-        this.sendEmail({
-          to: admin.email,
-          subject,
-          html,
-          text
-        }).catch(error => {
-          console.error(`❌ Failed to send notification to ${admin.email}:`, error.message);
-          return { success: false, email: admin.email, error: error.message };
-        })
-      );
+    View details in admin dashboard.
+    `;
 
-      const results = await Promise.all(emailPromises);
-      const successCount = results.filter(r => r.success).length;
-      
-      console.log(`📧 Booking notification sent to ${successCount}/${admins.length} admin(s)`);
-      
-      return { 
-        success: true, 
-        sentTo: successCount, 
-        total: admins.length,
-        results 
-      };
-    } catch (error) {
-      console.error('❌ Error sending admin notifications:', error);
-      throw error;
-    }
+    return this.sendEmail({
+      to: triplyEmail,
+      subject,
+      html,
+      text
+    });
   }
 
   /**
    * Send schedule change notification
    */
   async sendScheduleChangeAlert(schedule, route, affectedBookings) {
-    const subject = `Schedule Update: ${route.startLocation} → ${route.endLocation}`;
+    const routeFrom = (route && (route.origin || route.startLocation)) || 'Unknown';
+    const routeTo = (route && (route.destination || route.endLocation)) || 'Unknown';
+    const subject = `Schedule Update: ${routeFrom} → ${routeTo}`;
 
     for (const booking of affectedBookings) {
       const user = booking.userId;
@@ -379,7 +355,7 @@ View details in admin dashboard.
 
               <h3>Booking Details:</h3>
               <p><strong>Booking Reference:</strong> ${booking.bookingReference}</p>
-              <p><strong>Route:</strong> ${route.startLocation} → ${route.endLocation}</p>
+                <p><strong>Route:</strong> ${routeFrom} → ${routeTo}</p>
               
               <h3>Updated Schedule:</h3>
               <p><strong>New Departure Time:</strong> ${schedule.departureTime}</p>
@@ -405,7 +381,7 @@ Dear ${user.name},
 The schedule for your booking has been updated.
 
 Booking Reference: ${booking.bookingReference}
-Route: ${route.startLocation} → ${route.endLocation}
+  Route: ${routeFrom} → ${routeTo}
 New Departure: ${schedule.departureTime}
 New Arrival: ${schedule.arrivalTime}
 ${schedule.isActive === false ? 'Status: CANCELLED' : ''}
@@ -429,6 +405,12 @@ Triply Transport
    */
   async sendBookingCancellation(booking, user, schedule, route) {
     const subject = `Booking Cancelled - ${booking.bookingReference}`;
+    const seatsCount = booking.seats || (Array.isArray(booking.seatNumbers) ? booking.seatNumbers.length : 1);
+    const totalAmount = (typeof booking.totalPrice === 'number') ? booking.totalPrice : (route && route.fare ? route.fare * seatsCount : null);
+    const totalDisplay = totalAmount !== null ? `₹${totalAmount}` : 'N/A';
+    const routeFrom = (route && (route.origin || route.startLocation)) || 'Unknown';
+    const routeTo = (route && (route.destination || route.endLocation)) || 'Unknown';
+    const journeyDateDisplay = new Date(schedule.journeyDate || schedule.date || Date.now()).toLocaleDateString();
 
     const html = `
       <!DOCTYPE html>
@@ -449,12 +431,15 @@ Triply Transport
           </div>
           <div class="content">
             <p>Dear ${user.name},</p>
-            <p>Your booking has been cancelled as requested.</p>
+            <p>Your booking has been cancelled.</p>
             
             <div class="info-box">
               <p><strong>Booking Reference:</strong> ${booking.bookingReference}</p>
-              <p><strong>Route:</strong> ${route.startLocation} → ${route.endLocation}</p>
-              <p><strong>Amount:</strong> ₹${booking.totalAmount || (schedule.fare * booking.seats)}</p>
+              <p><strong>Route:</strong> ${routeFrom} → ${routeTo}</p>
+              <p><strong>Date:</strong> ${journeyDateDisplay}</p>
+              <p><strong>Departure:</strong> ${schedule.departureTime}</p>
+              <p><strong>Seats:</strong> ${seatsCount}</p>
+              <p><strong>Amount:</strong> ${totalDisplay}</p>
               <p><strong>Status:</strong> Cancelled</p>
             </div>
 
@@ -467,21 +452,97 @@ Triply Transport
     `;
 
     const text = `
-Booking Cancelled
+  Booking Cancelled
 
-Dear ${user.name},
+  Dear ${user.name},
 
-Your booking ${booking.bookingReference} has been cancelled.
-Route: ${route.startLocation} → ${route.endLocation}
+  Your booking ${booking.bookingReference} has been cancelled.
+  Route: ${routeFrom} → ${routeTo}
+  Date: ${journeyDateDisplay}
+  Departure: ${schedule.departureTime}
+  Seats: ${seatsCount}
+  Amount: ${totalDisplay}
 
-Refund (if applicable) will be processed within 5-7 business days.
+  Refund (if applicable) will be processed within 5-7 business days.
 
-Thank you,
-Triply Transport
+  Thank you,
+  Triply Transport
     `;
 
     return this.sendEmail({
       to: user.email,
+      subject,
+      html,
+      text
+    });
+  }
+
+  /**
+   * Send booking cancellation notification to Triply Transport email
+   */
+  async sendTriplyCancellationNotification(booking, user, schedule, route) {
+    const triplyEmail = 'triply.transport@gmail.com';
+    const subject = `Booking Cancelled: ${booking.bookingReference}`;
+    const seatsCount = booking.seats || (Array.isArray(booking.seatNumbers) ? booking.seatNumbers.length : 1);
+    const totalAmount = (typeof booking.totalPrice === 'number') ? booking.totalPrice : (route && route.fare ? route.fare * seatsCount : null);
+    const totalDisplay = totalAmount !== null ? `₹${totalAmount}` : 'N/A';
+    const routeFrom = (route && (route.origin || route.startLocation)) || 'Unknown';
+    const routeTo = (route && (route.destination || route.endLocation)) || 'Unknown';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #dc3545; color: white; padding: 20px; text-align: center; }
+          .content { background: #f9f9f9; padding: 20px; }
+          .info-box { background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #dc3545; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2>🚫 Booking Cancelled</h2>
+          </div>
+          <div class="content">
+            <p><strong>A booking has been cancelled on the system.</strong></p>
+            
+            <div class="info-box">
+              <h3>Booking Information</h3>
+              <p><strong>Reference:</strong> ${booking.bookingReference}</p>
+              <p><strong>Customer:</strong> ${user.name} (${user.email})</p>
+              <p><strong>Route:</strong> ${routeFrom} → ${routeTo}</p>
+              <p><strong>Date:</strong> ${new Date(schedule.journeyDate || schedule.date || Date.now()).toLocaleDateString()}</p>
+              <p><strong>Departure:</strong> ${schedule.departureTime}</p>
+              <p><strong>Seats:</strong> ${booking.seats}</p>
+              <p><strong>Amount:</strong> ${totalDisplay}</p>
+              <p><strong>Status:</strong> Cancelled</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const text = `
+Booking Cancelled Alert
+
+A booking has been cancelled:
+
+Reference: ${booking.bookingReference}
+Customer: ${user.name} (${user.email})
+Route: ${routeFrom} → ${routeTo}
+Date: ${new Date(schedule.journeyDate || schedule.date || Date.now()).toLocaleDateString()}
+Departure: ${schedule.departureTime}
+Seats: ${booking.seats}
+Amount: ${totalDisplay}
+Status: Cancelled
+    `;
+
+    return this.sendEmail({
+      to: triplyEmail,
       subject,
       html,
       text
