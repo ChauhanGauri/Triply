@@ -5,7 +5,6 @@ const emailService = require('../utils/emailService');
 class ScheduleController {
     async createSchedule(req, res) {
         try {
-            console.log('Creating new schedule with data:', req.body);
             const newSchedule = new Schedule(req.body);
             await newSchedule.save();
             
@@ -95,7 +94,6 @@ class ScheduleController {
     async updateSchedule(req, res) {
         try {
             const { id } = req.params;
-            console.log('Updating schedule with ID:', id);
             
             // Get old schedule before update
             const oldSchedule = await Schedule.findById(id).populate('route');
@@ -131,7 +129,6 @@ class ScheduleController {
                             updatedSchedule.route,
                             affectedBookings
                         );
-                        console.log(`✅ Schedule change alerts sent to ${affectedBookings.length} passengers`);
                     }
                 } catch (emailError) {
                     console.error('❌ Error sending schedule change emails:', emailError);
@@ -176,7 +173,6 @@ class ScheduleController {
             const now = new Date();
             now.setHours(0, 0, 0, 0); // Start of today to show all schedules for today
             
-            console.log('🔍 Browsing schedules - Current date:', now);
             
             const schedules = await Schedule.find({
                 isActive: true,
@@ -186,9 +182,7 @@ class ScheduleController {
             .populate('route', 'routeNumber origin destination fare')
             .sort({ journeyDate: 1, departureTime: 1 });
 
-            console.log(`📋 Found ${schedules.length} schedules for users`);
             if (schedules.length > 0) {
-                console.log('Sample schedule:', {
                     id: schedules[0]._id,
                     journeyDate: schedules[0].journeyDate,
                     isActive: schedules[0].isActive,

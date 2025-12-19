@@ -196,7 +196,9 @@
       border-color: #475569;
       color: white;
       cursor: not-allowed;
-      opacity: 0.7;
+      opacity: 0.6;
+      pointer-events: none;
+      user-select: none;
     }
 
     .seat-legend {
@@ -420,7 +422,6 @@
     const selectedSeatsCountSpan = document.getElementById('selectedSeatsCount');
     const requiredSeatsCountSpan = document.getElementById('requiredSeatsCount');
     
-    console.log('Elements check:', {
       scheduleSelect: !!scheduleSelect,
       seatSelectionContainer: !!seatSelectionContainer,
       seatGrid: !!seatGrid
@@ -443,11 +444,14 @@
 
     async function loadSeatAvailability(scheduleId) {
       try {
-        console.log('Loading seat availability for schedule:', scheduleId);
         const response = await fetch(`/api/bookings/schedule/${scheduleId}/seats`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
-        console.log('Seat data received:', data);
-        bookedSeats = data.bookedSeats || [];
+          const data = await response.json();
+          // Normalize booked seats to numbers for proper comparison
+          bookedSeats = (data.bookedSeats || []).map(seat => parseInt(seat)).filter(seat => !isNaN(seat));
         renderSeats();
       } catch (error) {
         console.error('Error loading seat availability:', error);
@@ -457,7 +461,6 @@
     }
 
     function renderSeats() {
-      console.log('Rendering seats. Booked:', bookedSeats, 'Selected:', selectedSeats);
       seatGrid.innerHTML = '';
       for (let i = 1; i <= totalSeats; i++) {
         const seat = document.createElement('div');
@@ -465,26 +468,34 @@
         seat.textContent = i;
         seat.dataset.seatNumber = i;
         
-        if (bookedSeats.includes(i)) {
+        // Check if seat is booked (ensure both are numbers for comparison)
+        const isBooked = bookedSeats.some(bookedSeat => parseInt(bookedSeat) === i);
+        if (isBooked) {
           seat.classList.add('booked');
-        } else if (selectedSeats.includes(i)) {
-          seat.classList.add('selected');
+          seat.title = 'This seat is already booked';
+          seat.setAttribute('aria-label', 'Seat ' + i + ' is booked and unavailable');
+          // Don't add click listener for booked seats - they're disabled
         } else {
-          seat.classList.add('available');
+          if (selectedSeats.includes(i)) {
+            seat.classList.add('selected');
+          } else {
+            seat.classList.add('available');
+          }
+          // Only add click listener for available/selected seats
+          seat.addEventListener('click', handleSeatClick);
         }
         
-        seat.addEventListener('click', handleSeatClick);
         seatGrid.appendChild(seat);
       }
-      console.log('Rendered', totalSeats, 'seats');
     }
 
     function handleSeatClick(event) {
       const seatNumber = parseInt(event.target.dataset.seatNumber);
       const requiredSeats = parseInt(passengersInput.value) || 1;
       
-      // Can't select booked seats
-      if (bookedSeats.includes(seatNumber)) {
+      // Can't select booked seats (normalize comparison)
+      const isBooked = bookedSeats.some(bookedSeat => parseInt(bookedSeat) === seatNumber);
+      if (isBooked) {
         return;
       }
       
@@ -518,13 +529,11 @@
     }
 
     scheduleSelect.addEventListener('change', async function() {
-      console.log('Schedule changed:', this.value);
       updateTotalPrice();
       const scheduleId = this.value;
       
       if (scheduleId) {
         currentScheduleId = scheduleId;
-        console.log('Showing seat selection container');
         seatSelectionContainer.style.display = 'block';
         resetSeatSelection();
         await loadSeatAvailability(scheduleId);
@@ -559,7 +568,6 @@
     const socket = io();
     
     socket.on('connect', () => {
-      console.log('Connected to real-time updates');
       // Join schedule room when a schedule is selected
       if (currentScheduleId) {
         socket.emit('joinSchedule', currentScheduleId);
@@ -568,7 +576,6 @@
 
     socket.on('seatsUpdated', (data) => {
       if (data.scheduleId === currentScheduleId) {
-        console.log('Seats updated in real-time:', data);
         bookedSeats = data.bookedSeats || [];
         
         // Remove any selected seats that are now booked

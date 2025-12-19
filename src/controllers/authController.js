@@ -30,28 +30,19 @@ class AuthController {
     async adminLogin(req, res) {
         try {
             const { email, password } = req.body;
-            console.log('Admin login attempt:', { email, password: '***' });
-
             if (!email || !password) {
-                console.log('Missing email or password');
                 return res.redirect('/auth/admin/login?error=Please provide email and password');
             }
 
             // Find admin user
             const admin = await User.findOne({ email, role: 'admin', isActive: true });
-            console.log('Admin found:', admin ? 'Yes' : 'No');
-            
             if (!admin) {
-                console.log('Admin not found with email:', email);
                 return res.redirect('/auth/admin/login?error=Invalid admin credentials');
             }
 
             // Check password
             const isPasswordValid = await admin.comparePassword(password);
-            console.log('Password valid:', isPasswordValid);
-            
             if (!isPasswordValid) {
-                console.log('Invalid password for admin:', email);
                 return res.redirect('/auth/admin/login?error=Invalid admin credentials');
             }
 
@@ -63,8 +54,6 @@ class AuthController {
                 role: admin.role
             };
             
-            console.log('Session created for admin:', req.session.user);
-            console.log('Redirecting to admin dashboard...');
 
             res.redirect('/admin/dashboard');
         } catch (error) {
@@ -160,7 +149,6 @@ class AuthController {
     // Logout
     logout(req, res) {
         const userRole = req.session.user?.role;
-        console.log('Logout requested for role:', userRole);
         
         req.session.destroy((err) => {
             if (err) {
@@ -168,7 +156,6 @@ class AuthController {
                 return res.status(500).json({ message: 'Logout failed' });
             }
             
-            console.log('Session destroyed, redirecting to home');
             // Redirect to home page after logout
             res.redirect('/');
         });
@@ -254,7 +241,6 @@ class AuthController {
                 // Send reset email
                 try {
                     await emailService.sendPasswordResetEmail(user, resetToken);
-                    console.log('✅ Password reset email sent to:', email);
                 } catch (emailError) {
                     console.error('❌ Error sending password reset email:', emailError);
                     // Clear the reset token if email fails
@@ -338,7 +324,6 @@ class AuthController {
             user.resetPasswordExpires = undefined;
             await user.save();
 
-            console.log('✅ Password reset successful for:', user.email);
 
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.json({ message: 'Password reset successful. You can now login.' });

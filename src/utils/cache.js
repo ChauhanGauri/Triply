@@ -6,7 +6,6 @@ class CacheService {
       const client = getRedisClient();
       const data = await client.get(key);
       if (data) {
-        console.log("✅ CACHE HIT");
         return JSON.parse(data);
       }
       return null;
@@ -65,7 +64,6 @@ class CacheService {
       }
 
       // If not in cache, fetch from database
-      console.log("🔴 DB HIT");
       const data = await fetchFunction();
 
       // Store in cache
@@ -74,7 +72,6 @@ class CacheService {
       return data;
     } catch (error) {
       // On error, try to fetch from database (graceful degradation)
-      console.log("🔴 DB HIT");
       try {
         const data = await fetchFunction();
         return data;

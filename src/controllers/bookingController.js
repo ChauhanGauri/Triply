@@ -8,7 +8,6 @@ const emailService = require('../utils/emailService');
 class BookingController {
     async createBooking(req, res) {
         try {
-            console.log('Creating booking with data:', req.body);
             
             // Add user ID from URL params for web requests
             if (req.params.userId) {
@@ -111,13 +110,10 @@ class BookingController {
             // Generate/update passenger manifest for this schedule
             try {
                 await PassengerManifest.generateForSchedule(req.body.schedule);
-                console.log(`Passenger manifest updated for schedule ${req.body.schedule}`);
             } catch (manifestError) {
                 console.error('Error updating passenger manifest:', manifestError);
                 // Continue with booking confirmation even if manifest fails
             }
-            
-            console.log(`Booking created successfully for ${seatCount} seats`);
             
             // Send booking confirmation emails
             try {
@@ -319,7 +315,6 @@ class BookingController {
                         updatedBooking.schedule,
                         updatedBooking.schedule.route
                     );
-                    console.log('✅ Booking cancellation email sent to user');
 
                     // Send notification email to Triply Transport
                     await emailService.sendTriplyCancellationNotification(
@@ -328,7 +323,6 @@ class BookingController {
                         updatedBooking.schedule,
                         updatedBooking.schedule.route
                     );
-                    console.log('✅ Booking cancellation notification email sent to triply.transport@gmail.com');
                 }
             } catch (emailError) {
                 console.error('❌ Error sending cancellation emails:', emailError);
@@ -422,8 +416,6 @@ class BookingController {
                 return res.redirect(`/user/${userId}/bookings/new?error=No booking data found. Please start again.`);
             }
             
-            console.log('Confirming booking with payment:', { paymentMethod, bookingData });
-            
             // Verify schedule still has enough seats
             const schedule = await Schedule.findById(bookingData.scheduleId);
             if (!schedule || !schedule.isActive || schedule.availableSeats < bookingData.passengerCount) {
@@ -433,11 +425,22 @@ class BookingController {
             // Generate booking ID
             const bookingId = 'BK' + Date.now().toString(36).toUpperCase();
             
+            // Parse seat numbers from booking data
+            let seatNumbers = [];
+            if (bookingData.seatNumbers) {
+                if (typeof bookingData.seatNumbers === 'string') {
+                    seatNumbers = bookingData.seatNumbers.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+                } else if (Array.isArray(bookingData.seatNumbers)) {
+                    seatNumbers = bookingData.seatNumbers.map(s => parseInt(s)).filter(n => !isNaN(n));
+                }
+            }
+
             // Create booking document
             const newBooking = new Booking({
                 user: userId,
                 schedule: bookingData.scheduleId,
                 seats: bookingData.passengerCount,
+                seatNumbers: seatNumbers,
                 status: 'confirmed',
                 bookingReference: bookingId,
                 passengers: bookingData.passengers,
@@ -449,15 +452,15 @@ class BookingController {
             
             await newBooking.save();
             
-            // Update available seats
+            // Update available seats and booked seats in the schedule
             await Schedule.findByIdAndUpdate(bookingData.scheduleId, {
-                $inc: { availableSeats: -bookingData.passengerCount }
+                $inc: { availableSeats: -bookingData.passengerCount },
+                $push: { bookedSeats: { $each: seatNumbers } }
             });
             
             // Generate/update passenger manifest for this schedule
             try {
                 await PassengerManifest.generateForSchedule(bookingData.scheduleId);
-                console.log(`Passenger manifest updated for schedule ${bookingData.scheduleId}`);
             } catch (manifestError) {
                 console.error('Error updating passenger manifest:', manifestError);
                 // Continue with booking confirmation even if manifest fails
@@ -499,8 +502,6 @@ class BookingController {
             // Clear pending booking from session
             delete req.session.pendingBooking;
             
-            console.log(`Booking confirmed successfully with ID: ${bookingId}`);
-            
             // Emit realtime update to admins and user room after confirmation
             try {
                 const io = getIo();
@@ -509,6 +510,14 @@ class BookingController {
                     .populate({ path: 'schedule', populate: { path: 'route' } });
                 io.to('admins').emit('bookingCreated', { booking: populated });
                 io.to(`user_${populated.user ? populated.user._id : 'unknown'}`).emit('bookingCreated', { booking: populated });
+                
+                // Emit seat update for the specific schedule
+                const updatedSchedule = await Schedule.findById(bookingData.scheduleId);
+                io.to(`schedule_${bookingData.scheduleId}`).emit('seatsUpdated', {
+                    scheduleId: bookingData.scheduleId,
+                    bookedSeats: updatedSchedule.bookedSeats || [],
+                    availableSeats: updatedSchedule.availableSeats
+                });
             } catch (emitErr) {
                 console.warn('Socket emit skipped (not initialized):', emitErr.message);
             }
@@ -583,7 +592,6 @@ class BookingController {
             // Update passenger manifest for this schedule
             try {
                 await PassengerManifest.generateForSchedule(booking.schedule._id);
-                console.log(`Passenger manifest updated after cancellation for schedule ${booking.schedule._id}`);
             } catch (manifestError) {
                 console.error('Error updating passenger manifest after cancellation:', manifestError);
                 // Continue with cancellation even if manifest update fails
@@ -607,7 +615,6 @@ class BookingController {
                         populatedBooking.schedule,
                         populatedBooking.schedule.route
                     );
-                    console.log('✅ Booking cancellation email sent to user');
 
                     // Send notification email to Triply Transport
                     await emailService.sendTriplyCancellationNotification(
@@ -616,14 +623,11 @@ class BookingController {
                         populatedBooking.schedule,
                         populatedBooking.schedule.route
                     );
-                    console.log('✅ Booking cancellation notification email sent to triply.transport@gmail.com');
                 }
             } catch (emailError) {
                 console.error('❌ Error sending cancellation emails:', emailError);
                 // Continue even if email fails - booking is already cancelled
             }
-            
-            console.log(`Booking ${id} cancelled successfully. ${booking.seats} seats returned to schedule.`);
             
             // Emit real-time seat update
             try {
@@ -674,15 +678,36 @@ class BookingController {
                 return res.status(404).json({ message: 'Schedule not found' });
             }
             
+            // Get all confirmed bookings for this schedule to ensure accuracy
+            const confirmedBookings = await Booking.find({
+                schedule: scheduleId,
+                status: 'confirmed'
+            }).select('seatNumbers');
+            
+            // Aggregate all booked seat numbers from confirmed bookings
+            const bookedSeatsFromBookings = [];
+            confirmedBookings.forEach(booking => {
+                if (booking.seatNumbers && Array.isArray(booking.seatNumbers)) {
+                    bookedSeatsFromBookings.push(...booking.seatNumbers);
+                }
+            });
+            
+            // Merge with schedule's bookedSeats array and remove duplicates
+            // Ensure all values are numbers
+            const allBookedSeats = [...new Set([
+                ...(schedule.bookedSeats || []).map(s => parseInt(s)).filter(s => !isNaN(s)),
+                ...bookedSeatsFromBookings.map(s => parseInt(s)).filter(s => !isNaN(s))
+            ])].sort((a, b) => a - b);
+            
             res.status(200).json({
                 scheduleId: schedule._id,
                 totalSeats: schedule.capacity,
                 availableSeats: schedule.availableSeats,
-                bookedSeats: schedule.bookedSeats || [],
-                bookedCount: schedule.bookedSeats ? schedule.bookedSeats.length : 0
+                bookedSeats: allBookedSeats,
+                bookedCount: allBookedSeats.length
             });
         } catch (error) {
-            console.error('Error fetching seat availability:', error);
+            console.error('❌ Error fetching seat availability:', error);
             res.status(500).json({
                 message: 'Error fetching seat availability',
                 error: error.message

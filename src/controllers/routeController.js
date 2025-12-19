@@ -4,7 +4,6 @@ const cache = require('../utils/cache');
 class RouteController {
     async createRoute(req, res) {
         try {
-            console.log('Creating new route with data:', req.body);
             
             // Handle checkbox boolean conversion for new routes
             if (req.body.isActive === 'on') {
@@ -20,7 +19,6 @@ class RouteController {
             await cache.deletePattern('routes:*');
             await cache.deletePattern('dashboard:*');
             
-            console.log('Route created successfully:', newRoute.routeNumber);
             
             // Check if this is an API request or web request
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
@@ -123,8 +121,6 @@ class RouteController {
     async updateRoute(req, res) {
         try {
             const { id } = req.params;
-            console.log('Updating route with ID:', id);
-            console.log('Request body:', req.body);
             
             // Handle checkbox boolean conversion
             if (req.body.isActive === 'on') {
