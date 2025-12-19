@@ -501,18 +501,9 @@
         loadFilterPreferences();
       }, 200);
 
-      // Debug: Test if functions are available
-      console.log('🔧 Filter functions available:', {
-        applyFilters: typeof applyFilters,
-        clearFilters: typeof clearFilters,
-        storeAllSchedules: typeof storeAllSchedules,
-        schedulesCount: allSchedules.length
-      });
-      
       // Check if a specific route is selected from dashboard
       const selectedRouteId = '<%= selectedRouteId || "" %>';
       if (selectedRouteId) {
-        console.log('Auto-selecting route from dashboard:', selectedRouteId);
         
         // Find the route information for the selected route
         const selectedRouteCard = document.querySelector(`[data-route-id="${selectedRouteId}"]`);
@@ -596,17 +587,13 @@
         };
       });
       
-      console.log('✅ Stored schedules:', allSchedules.length);
       if (allSchedules.length > 0) {
-        console.log('📋 Sample schedule:', allSchedules[0]);
-        console.log('📋 All schedules data:', allSchedules.map(s => ({
           route: s.routeNumber,
           departure: s.departure,
           seats: s.availableSeats,
           fare: s.fare
         })));
       } else {
-        console.warn('⚠️ No schedules found! Check if schedule-item elements exist in the DOM.');
       }
     }
 
@@ -624,11 +611,7 @@
       // Save filter preferences to localStorage
       LocalStorageManager.saveFilterPreferences(filters);
 
-      console.log('🔍 Applying filters:', filters);
-      console.log('📊 Total schedules to filter:', allSchedules.length);
-      
       if (allSchedules.length === 0) {
-        console.warn('⚠️ No schedules found! Make sure storeAllSchedules() was called.');
         return;
       }
 
@@ -697,7 +680,6 @@
 
         // Log if schedule doesn't match (for debugging)
         if (!matches && reasons.length > 0) {
-          console.log(`❌ Schedule filtered out:`, {
             route: schedule.routeNumber,
             departure: schedule.departure,
             seats: schedule.availableSeats,
@@ -709,7 +691,6 @@
         return matches;
       });
 
-      console.log('✅ Filtered schedules:', filteredSchedules.length, 'out of', allSchedules.length);
       
       // Debug: Show what filters were actually applied
       const activeFilters = Object.entries(filters)
@@ -720,7 +701,6 @@
           return value && value !== '' && value !== 0;
         })
         .map(([key, value]) => `${key}: ${value}`);
-      console.log('🎯 Active filters:', activeFilters.join(', ') || 'None');
 
       // Sort schedules
       filteredSchedules.sort((a, b) => {
@@ -806,7 +786,6 @@
       const savedFilters = LocalStorageManager.getFilterPreferences();
       
       if (savedFilters && Object.keys(savedFilters).length > 0) {
-        console.log('📥 Loading saved filter preferences:', savedFilters);
         
         // Restore filter values
         if (savedFilters.journeyDate) {
@@ -834,17 +813,14 @@
         // Apply the loaded filters (ensure schedules are stored first)
         if (allSchedules.length > 0) {
           setTimeout(() => {
-            console.log('🔄 Applying loaded filters...');
             applyFilters();
           }, 100);
         } else {
-          console.warn('⚠️ Cannot apply filters: schedules not stored yet. Retrying...');
           // Retry after a short delay
           setTimeout(() => {
             if (allSchedules.length > 0) {
               applyFilters();
             } else {
-              console.error('❌ Failed to load schedules. Filters not applied.');
             }
           }, 500);
         }
@@ -932,7 +908,6 @@
     const journeyDateInput = document.getElementById('journeyDate');
     if (journeyDateInput) {
       journeyDateInput.addEventListener('change', function() {
-        console.log('📅 Date changed, applying filters...');
         applyFilters();
       });
     }
@@ -949,11 +924,9 @@
             btn.addEventListener('click', function(e) {
               e.preventDefault();
               e.stopPropagation();
-              console.log('🔘 Apply Filters button clicked (via event listener)');
               if (typeof applyFilters === 'function') {
                 applyFilters();
               } else {
-                console.error('❌ applyFilters function not found!');
               }
             });
           }
@@ -961,11 +934,9 @@
             btn.addEventListener('click', function(e) {
               e.preventDefault();
               e.stopPropagation();
-              console.log('🔘 Clear Filters button clicked (via event listener)');
               if (typeof clearFilters === 'function') {
                 clearFilters();
               } else {
-                console.error('❌ clearFilters function not found!');
               }
             });
           }
@@ -975,7 +946,6 @@
         filterForm.addEventListener('submit', function(e) {
           e.preventDefault();
           e.stopPropagation();
-          console.log('🚫 Form submission prevented');
           return false;
         });
       }

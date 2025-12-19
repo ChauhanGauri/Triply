@@ -113,7 +113,6 @@ class DashboardController {
     async getUserDashboard(req, res) {
         try {
             const userId = req.params.userId || req.user?.id; // Assuming user ID from auth middleware or params
-            console.log('🏠 Loading dashboard for user:', userId);
             
             if (!userId) {
                 return res.status(400).json({ message: 'User ID is required' });
@@ -136,11 +135,8 @@ class DashboardController {
                 })
                 .sort({ createdAt: -1 });
 
-            console.log(`📊 Found ${userBookings.length} bookings for user`);
-            
             // Debug: Log booking data structure
             if (userBookings.length > 0) {
-                console.log('📋 Sample booking structure:', {
                     id: userBookings[0]._id,
                     hasSchedule: !!userBookings[0].schedule,
                     scheduleId: userBookings[0].schedule ? userBookings[0].schedule._id : 'NO SCHEDULE',
@@ -161,14 +157,12 @@ class DashboardController {
                 userBookings.forEach((booking, index) => {
                     if (!booking.schedule || !booking.schedule.route) {
                         nullRouteCount++;
-                        console.log(`❌ Booking ${index + 1} (${booking._id}) missing route data:`, {
                             hasSchedule: !!booking.schedule,
                             scheduleId: booking.schedule ? booking.schedule._id : null,
                             hasRoute: booking.schedule ? !!booking.schedule.route : false
                         });
                     }
                 });
-                console.log(`🔍 Bookings with missing route data: ${nullRouteCount}/${userBookings.length}`);
             }
 
             // Get user booking statistics
@@ -186,11 +180,8 @@ class DashboardController {
 
             // Get available routes for new bookings
             const availableRoutes = await Route.find().sort({ routeNumber: 1 });
-            console.log(`🗺️ Found ${availableRoutes.length} available routes`);
-            
             // Debug: Log route data structure
             if (availableRoutes.length > 0) {
-                console.log('🛣️ Sample route structure:', {
                     id: availableRoutes[0]._id,
                     routeNumber: availableRoutes[0].routeNumber,
                     origin: availableRoutes[0].origin,
@@ -377,12 +368,9 @@ class DashboardController {
 
     async getEditRoute(req, res) {
         try {
-            console.log('getEditRoute called with ID:', req.params.id);
             const route = await Route.findById(req.params.id);
-            console.log('Route found:', route ? 'Yes' : 'No');
             
             if (!route) {
-                console.log('Route not found, rendering 404');
                 return res.status(404).render('error', {
                     title: 'Route Not Found',
                     message: 'The route you are looking for does not exist.',
@@ -390,7 +378,6 @@ class DashboardController {
                 });
             }
             
-            console.log('Rendering edit form with route:', route.routeNumber);
             res.render('admin/route-form', { 
                 title: 'Edit Route',
                 route,
@@ -418,7 +405,6 @@ class DashboardController {
             
             // Log warning if there are orphaned schedules
             if (schedules.length !== validSchedules.length) {
-                console.warn(`Found ${schedules.length - validSchedules.length} schedules with invalid route references`);
             }
             
             res.render('admin/schedules', { 
@@ -642,11 +628,6 @@ class DashboardController {
         try {
             const { userId } = req.params;
             const { routeId } = req.query; // Get routeId from query parameters
-            console.log('🎫 getNewBooking controller reached for user:', userId);
-            
-            if (routeId) {
-                console.log('🎯 Filtering schedules for specific route:', routeId);
-            }
             
             // Build query for available schedules
             const currentDate = new Date();
@@ -666,11 +647,44 @@ class DashboardController {
             .populate('route', 'routeNumber origin destination fare')
             .sort({ journeyDate: 1, departureTime: 1 });
 
-            console.log(`📋 Found ${schedules.length} available schedules for booking${routeId ? ' (filtered by route)' : ''}`);
+            // Recalculate available seats based on confirmed bookings only
+            const Booking = require('../models/Booking');
+            for (let schedule of schedules) {
+                // Count confirmed bookings for this schedule
+                const confirmedBookings = await Booking.find({
+                    schedule: schedule._id,
+                    status: 'confirmed'
+                }).select('seats seatNumbers');
+                
+                // Collect all unique booked seat numbers from confirmed bookings
+                const bookedSeatNumbers = new Set();
+                
+                confirmedBookings.forEach(booking => {
+                    if (booking.seatNumbers && Array.isArray(booking.seatNumbers)) {
+                        booking.seatNumbers.forEach(seat => {
+                            const seatNum = parseInt(seat);
+                            if (!isNaN(seatNum) && seatNum >= 1 && seatNum <= schedule.capacity) {
+                                bookedSeatNumbers.add(seatNum);
+                            }
+                        });
+                    }
+                });
+                
+                // Calculate available seats: capacity - number of unique booked seats
+                const totalBookedSeats = bookedSeatNumbers.size;
+                const calculatedAvailableSeats = schedule.capacity - totalBookedSeats;
+                
+                // Update the schedule object with recalculated values
+                schedule.availableSeats = Math.max(0, calculatedAvailableSeats);
+                schedule.bookedSeats = Array.from(bookedSeatNumbers).sort((a, b) => a - b);
+            }
 
-            res.render('user/select-route', { 
+            // Filter out schedules with 0 available seats after recalculation
+            const availableSchedules = schedules.filter(s => s.availableSeats > 0);
+
+            res.render('user/select-route', {
                 title: routeId ? 'Select Schedule for Route' : 'Select Route & Schedule',
-                schedules,
+                schedules: availableSchedules,
                 user: req.session.user,
                 error: req.query.error || null,
                 success: req.query.success || null,
@@ -757,9 +771,8 @@ class DashboardController {
     async processBooking(req, res) {
         try {
             const { userId } = req.params;
-            const { scheduleId, passengerCount, contactPhone, totalPrice, passengers } = req.body;
+            const { scheduleId, passengerCount, contactPhone, totalPrice, passengers, seatNumbers } = req.body;
 
-            console.log('Processing booking data:', { scheduleId, passengerCount, contactPhone, totalPrice });
 
             // Verify schedule exists and has enough seats
             const schedule = await Schedule.findById(scheduleId)
@@ -771,6 +784,27 @@ class DashboardController {
 
             if (schedule.availableSeats < parseInt(passengerCount)) {
                 return res.redirect(`/user/${userId}/bookings/new?error=Not enough seats available`);
+            }
+
+            // Parse seat numbers
+            let parsedSeatNumbers = [];
+            if (seatNumbers) {
+                if (typeof seatNumbers === 'string') {
+                    parsedSeatNumbers = seatNumbers.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+                } else if (Array.isArray(seatNumbers)) {
+                    parsedSeatNumbers = seatNumbers.map(s => parseInt(s)).filter(n => !isNaN(n));
+                }
+            }
+
+            // Validate seat numbers
+            if (parsedSeatNumbers.length !== parseInt(passengerCount)) {
+                return res.redirect(`/user/${userId}/bookings/new?error=Please select exactly ${passengerCount} seat(s)`);
+            }
+
+            // Check if any selected seats are already booked
+            const alreadyBooked = parsedSeatNumbers.filter(seat => schedule.bookedSeats && schedule.bookedSeats.includes(seat));
+            if (alreadyBooked.length > 0) {
+                return res.redirect(`/user/${userId}/bookings/new?error=Seats ${alreadyBooked.join(', ')} are already booked. Please select different seats.`);
             }
 
             // Prepare booking data for payment page
@@ -788,7 +822,8 @@ class DashboardController {
                 passengers: Array.isArray(passengers) ? passengers : [passengers],
                 contactPhone,
                 totalPrice: parseFloat(totalPrice),
-                passengerCount: parseInt(passengerCount)
+                passengerCount: parseInt(passengerCount),
+                seatNumbers: parsedSeatNumbers
             };
 
             // Store booking data in session for payment processing

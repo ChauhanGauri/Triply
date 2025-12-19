@@ -15,9 +15,6 @@ class EmailService {
   async sendEmail({ to, subject, html, text, attachments = [] }) {
     try {
       if (!this.transporter) {
-        console.log('📧 Email would be sent to:', to);
-        console.log('📧 Subject:', subject);
-        console.log('📧 Content:', text || html);
         return { success: true, messageId: 'test-mode' };
       }
 
@@ -32,7 +29,6 @@ class EmailService {
       };
 
       const info = await this.transporter.sendMail(mailOptions);
-      console.log('✅ Email sent successfully:', info.messageId);
       return { success: true, messageId: info.messageId };
     } catch (error) {
       console.error('❌ Email sending failed:', error);
