@@ -16,6 +16,9 @@ const ensureAdminSeed = require('./src/utils/ensureAdmin');
 
 const app = express();
 
+// Trust proxy for rate limiting and session handling in production
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

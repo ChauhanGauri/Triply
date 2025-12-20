@@ -5,7 +5,7 @@ async function ensureAdminSeed() {
     const existingAdmin = await User.findOne({ role: 'admin' });
 
     if (existingAdmin) {
-      console.log(`ℹ️ Admin already present (${existingAdmin.email}).`);
+      // Admin already exists, no need to log
       return existingAdmin;
     }
 
