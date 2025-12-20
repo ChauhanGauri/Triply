@@ -137,6 +137,8 @@ class DashboardController {
 
             // Debug: Log booking data structure
             if (userBookings.length > 0) {
+                // Debug: Log booking info
+                console.log({
                     id: userBookings[0]._id,
                     hasSchedule: !!userBookings[0].schedule,
                     scheduleId: userBookings[0].schedule ? userBookings[0].schedule._id : 'NO SCHEDULE',
@@ -157,6 +159,8 @@ class DashboardController {
                 userBookings.forEach((booking, index) => {
                     if (!booking.schedule || !booking.schedule.route) {
                         nullRouteCount++;
+                        // Debug: Log missing route info
+                        console.log({
                             hasSchedule: !!booking.schedule,
                             scheduleId: booking.schedule ? booking.schedule._id : null,
                             hasRoute: booking.schedule ? !!booking.schedule.route : false
@@ -182,6 +186,7 @@ class DashboardController {
             const availableRoutes = await Route.find().sort({ routeNumber: 1 });
             // Debug: Log route data structure
             if (availableRoutes.length > 0) {
+                console.log({
                     id: availableRoutes[0]._id,
                     routeNumber: availableRoutes[0].routeNumber,
                     origin: availableRoutes[0].origin,
