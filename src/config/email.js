@@ -4,17 +4,19 @@ const nodemailer = require('nodemailer');
 // Create reusable transporter
 const createTransporter = () => {
   // For development, you can use:
-  // 1. Gmail (requires app password): smtp.gmail.com:587
-  // 2. Mailtrap (testing): smtp.mailtrap.io
-  // 3. SendGrid, Mailgun, AWS SES for production
+  // 1. Brevo (recommended): smtp-relay.brevo.com:587
+  // 2. SendGrid: smtp.sendgrid.net:587 with apikey
+  // 3. Gmail (requires app password): smtp.gmail.com:587
+  // 4. Mailtrap (testing): smtp.mailtrap.io
+  // 5. Resend, Mailgun, AWS SES for production
   
   const config = {
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    host: process.env.EMAIL_HOST || 'smtp-relay.brevo.com',
     port: parseInt(process.env.EMAIL_PORT || '587'),
     secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for other ports
     auth: {
       user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD // Use app-specific password for Gmail
+      pass: process.env.EMAIL_PASSWORD // Brevo SMTP key
     }
   };
 
