@@ -5,7 +5,6 @@ const path = require('path');
 class EmailService {
   constructor() {
     this.transporter = createTransporter();
-    this.useBrevoAPI = process.env.EMAIL_HOST === 'smtp-relay.brevo.com';
   }
 
   /**
@@ -15,12 +14,6 @@ class EmailService {
    */
   async sendEmail({ to, subject, html, text, attachments = [] }) {
     try {
-      // Use Brevo API if configured for Brevo
-      if (this.useBrevoAPI && process.env.EMAIL_PASSWORD) {
-        return await this.sendViaBrevoAPI({ to, subject, html, text });
-      }
-
-      // Fallback to SMTP
       if (!this.transporter) {
         console.warn('⚠️ Email transporter not configured - email not sent');
         return { success: true, messageId: 'test-mode' };
@@ -42,40 +35,6 @@ class EmailService {
       console.error('❌ Email sending failed:', error);
       throw error;
     }
-  }
-
-  /**
-   * Send email via Brevo API
-   */
-  async sendViaBrevoAPI({ to, subject, html, text }) {
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'api-key': process.env.EMAIL_PASSWORD,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        sender: {
-          name: emailConfig.from.name,
-          email: emailConfig.from.address
-        },
-        to: Array.isArray(to) ? to.map(email => ({ email })) : [{ email: to }],
-        subject,
-        htmlContent: html,
-        textContent: text,
-        replyTo: {
-          email: emailConfig.replyTo
-        }
-      })
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Brevo API error: ${response.status} ${error}`);
-    }
-
-    const data = await response.json();
-    return { success: true, messageId: data.messageId };
   }
 
   /**
