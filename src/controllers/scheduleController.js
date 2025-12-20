@@ -182,14 +182,17 @@ class ScheduleController {
             .populate('route', 'routeNumber origin destination fare')
             .sort({ journeyDate: 1, departureTime: 1 });
 
-            if (schedules.length > 0) {
-                    id: schedules[0]._id,
-                    journeyDate: schedules[0].journeyDate,
-                    isActive: schedules[0].isActive,
-                    availableSeats: schedules[0].availableSeats,
-                    route: schedules[0].route
-                });
-            }
+            // If you want to use the first schedule, do something like:
+            // if (schedules.length > 0) {
+            //     const firstSchedule = {
+            //         id: schedules[0]._id,
+            //         journeyDate: schedules[0].journeyDate,
+            //         isActive: schedules[0].isActive,
+            //         availableSeats: schedules[0].availableSeats,
+            //         route: schedules[0].route
+            //     };
+            //     // Use firstSchedule as needed
+            // }
 
             res.render('public/schedules', {
                 title: 'Browse Schedules',
