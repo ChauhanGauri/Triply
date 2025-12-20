@@ -1,41 +1,61 @@
-// Email service for sending various types of emails
-const { createTransporter, emailConfig } = require('../config/email');
-const path = require('path');
+const { emailConfig } = require('../config/email');
 
 class EmailService {
-  constructor() {
-    this.transporter = createTransporter();
-  }
+  constructor() {}
 
-  /**
-   * Send email
-   * @param {Object} options - Email options (to, subject, html, text)
-   * @returns {Promise}
-   */
-  async sendEmail({ to, subject, html, text, attachments = [] }) {
+  async sendEmail({ to, subject, html, text }) {
+    if (!process.env.BREVO_API_KEY) {
+      throw new Error('Brevo API key is missing');
+    }
+
     try {
-      if (!this.transporter) {
-        console.warn('⚠️ Email transporter not configured - email not sent');
-        return { success: true, messageId: 'test-mode' };
-      }
-
-      const mailOptions = {
-        from: `${emailConfig.from.name} <${emailConfig.from.address}>`,
-        to,
-        subject,
-        text,
-        html,
-        replyTo: emailConfig.replyTo,
-        attachments
-      };
-
-      const info = await this.transporter.sendMail(mailOptions);
-      return { success: true, messageId: info.messageId };
+      return await this.sendViaBrevoAPI({ to, subject, html, text });
     } catch (error) {
       console.error('❌ Email sending failed:', error);
+        if (error && error.response) {
+          const errorBody = await error.response.text();
+          console.error('Brevo API error response:', errorBody);
+        }
       throw error;
     }
   }
+
+  async sendViaBrevoAPI({ to, subject, html, text }) {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': process.env.BREVO_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: {
+          name: emailConfig.from.name,
+          email: emailConfig.from.address,
+        },
+        to: Array.isArray(to)
+          ? to.map(email => ({ email }))
+          : [{ email: to }],
+        subject,
+        htmlContent: html,
+        textContent: text,
+        replyTo: {
+          email: emailConfig.replyTo,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+        console.error('❌ Brevo API error:', response.status, errorBody);
+      throw new Error(`Brevo API error ${response.status}: ${error}`);
+    }
+
+    const data = await response.json();
+    return { success: true, messageId: data.messageId };
+  }
+
+  /* 👇 ALL YOUR EXISTING EMAIL METHODS STAY EXACTLY THE SAME 👇 */
+
 
   /**
    * Send booking confirmation email
