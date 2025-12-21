@@ -1,10 +1,12 @@
+
 // scripts/seed-admin.js
+require('dotenv').config();
 const mongoose = require('mongoose');
 const User = require('../src/models/User');
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/triply';
 
-const ADMIN_EMAIL = 'admin@triply.com';
+const ADMIN_EMAIL = 'admin@transport.com';
 const ADMIN_PASSWORD = 'admin123';
 const ADMIN_NAME = 'Admin';
 
