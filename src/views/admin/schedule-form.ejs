@@ -241,10 +241,10 @@
                       <small class="form-text text-muted">Format: HH:MM (e.g., 14:30 for 2:30 PM)</small>
                     </div>
                     <div class="col-md-6 mb-3">
-                      <label for="arrivalTime" class="form-label">Arrival Time *</label>
+                      <label for="arrivalTime" class="form-label">Arrival Time <span id="arrival-required" style="color:red">*</span></label>
                       <input type="time" class="form-control" id="arrivalTime" name="arrivalTime"
-                             value="<%= schedule ? schedule.arrivalTime || '' : '' %>" required>
-                      <small class="form-text text-muted">Format: HH:MM (e.g., 16:45 for 4:45 PM)</small>
+                             value="<%= schedule ? schedule.arrivalTime || '' : '' %>" <%= schedule && schedule.route && schedule.route.duration ? '' : 'required' %>>
+                      <small class="form-text text-muted">Format: HH:MM (e.g., 16:45 for 4:45 PM). If route has a set duration, arrival time will be auto-calculated.</small>
                     </div>
                   </div>
 
@@ -285,18 +285,43 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    // Auto-calculate arrival time if route has duration
+    const routes = <%- JSON.stringify(routes) %>;
+    function getSelectedRoute() {
+      const routeId = document.getElementById('route').value;
+      return routes.find(r => r._id === routeId);
+    }
+    function calculateArrival() {
+      const dep = document.getElementById('departureTime').value;
+      const route = getSelectedRoute();
+      if (route && route.duration && dep) {
+        const [h, m] = dep.split(":").map(Number);
+        let d = new Date();
+        d.setHours(h, m, 0, 0);
+        d = new Date(d.getTime() + route.duration * 60000);
+        const ah = d.getHours().toString().padStart(2, '0');
+        const am = d.getMinutes().toString().padStart(2, '0');
+        document.getElementById('arrivalTime').value = `${ah}:${am}`;
+        document.getElementById('arrivalTime').readOnly = true;
+        document.getElementById('arrival-required').style.display = 'none';
+      } else {
+        document.getElementById('arrivalTime').readOnly = false;
+        document.getElementById('arrival-required').style.display = '';
+      }
+    }
+    document.getElementById('route').addEventListener('change', calculateArrival);
+    document.getElementById('departureTime').addEventListener('change', calculateArrival);
+    window.addEventListener('DOMContentLoaded', calculateArrival);
     // Validate that arrival time is after departure time
     function validateTimes() {
       const departureTime = document.getElementById('departureTime').value;
       const arrivalTime = document.getElementById('arrivalTime').value;
-      
       if (departureTime && arrivalTime && arrivalTime <= departureTime) {
         alert('Arrival time must be after departure time');
         return false;
       }
       return true;
     }
-    
     document.getElementById('arrivalTime').addEventListener('change', validateTimes);
     document.getElementById('departureTime').addEventListener('change', validateTimes);
   </script>
