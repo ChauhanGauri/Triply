@@ -251,6 +251,16 @@ class BookingController {
         try {
             const deletedBooking = await Booking.findByIdAndDelete(req.params.id);
             if (!deletedBooking) return res.status(404).json({ message: "Booking not found" });
+
+            // Remove seat numbers from the schedule's bookedSeats array if booking was confirmed
+            if (deletedBooking.status === 'confirmed' && deletedBooking.schedule && deletedBooking.seatNumbers && deletedBooking.seatNumbers.length > 0) {
+                const Schedule = require('../models/Schedule');
+                await Schedule.findByIdAndUpdate(deletedBooking.schedule, {
+                    $inc: { availableSeats: deletedBooking.seats },
+                    $pull: { bookedSeats: { $in: deletedBooking.seatNumbers } }
+                });
+            }
+
             res.status(200).json({ message: "Booking deleted successfully" });
         } catch (error) {
             res.status(500).json({ message: "Error deleting booking", error: error.message });
@@ -683,28 +693,22 @@ class BookingController {
                 schedule: scheduleId,
                 status: 'confirmed'
             }).select('seatNumbers');
-            
-            // Aggregate all booked seat numbers from confirmed bookings
-            const bookedSeatsFromBookings = [];
+
+            // Aggregate all booked seat numbers from confirmed bookings only
+            const bookedSeats = [];
             confirmedBookings.forEach(booking => {
                 if (booking.seatNumbers && Array.isArray(booking.seatNumbers)) {
-                    bookedSeatsFromBookings.push(...booking.seatNumbers);
+                    bookedSeats.push(...booking.seatNumbers);
                 }
             });
-            
-            // Merge with schedule's bookedSeats array and remove duplicates
-            // Ensure all values are numbers
-            const allBookedSeats = [...new Set([
-                ...(schedule.bookedSeats || []).map(s => parseInt(s)).filter(s => !isNaN(s)),
-                ...bookedSeatsFromBookings.map(s => parseInt(s)).filter(s => !isNaN(s))
-            ])].sort((a, b) => a - b);
-            
+            const uniqueBookedSeats = [...new Set(bookedSeats)].sort((a, b) => a - b);
+
             res.status(200).json({
                 scheduleId: schedule._id,
                 totalSeats: schedule.capacity,
-                availableSeats: schedule.availableSeats,
-                bookedSeats: allBookedSeats,
-                bookedCount: allBookedSeats.length
+                availableSeats: schedule.capacity - uniqueBookedSeats.length,
+                bookedSeats: uniqueBookedSeats,
+                bookedCount: uniqueBookedSeats.length
             });
         } catch (error) {
             console.error('❌ Error fetching seat availability:', error);
