@@ -80,62 +80,68 @@ describe('Validation Middleware', () => {
   });
 
   describe('validateSchedule', () => {
-    it('should call next() if all required fields are present', () => {
+    it('should call next() if all required fields are present', async () => {
       req.body = {
-        routeId: 'route123',
+        route: 'route123',
         departureTime: '10:00',
         arrivalTime: '12:00'
       };
 
-      validateSchedule(req, res, next);
+      await validateSchedule(req, res, next);
 
       expect(next).toHaveBeenCalled();
       expect(res.status).not.toHaveBeenCalled();
     });
 
-    it('should return 400 if routeId is missing', () => {
+    it('should return 400 if route is missing', async () => {
       req.body = {
         departureTime: '10:00',
         arrivalTime: '12:00'
       };
 
-      validateSchedule(req, res, next);
+      await validateSchedule(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'All fields are required for a schedule.'
+        error: 'Route and departure time are required for a schedule.'
       });
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should return 400 if departureTime is missing', () => {
+    it('should return 400 if departureTime is missing', async () => {
       req.body = {
-        routeId: 'route123',
+        route: 'route123',
         arrivalTime: '12:00'
       };
 
-      validateSchedule(req, res, next);
+      await validateSchedule(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'All fields are required for a schedule.'
+        error: 'Route and departure time are required for a schedule.'
       });
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should return 400 if arrivalTime is missing', () => {
+    it('should return 400 if arrivalTime is missing and route has no duration', async () => {
       req.body = {
-        routeId: 'route123',
+        route: 'route123',
         departureTime: '10:00'
       };
 
-      validateSchedule(req, res, next);
+      // Mock Route.findById to return null (simulate route not found or no duration)
+      const Route = require('../../../src/models/Route');
+      jest.spyOn(Route, 'findById').mockResolvedValue(null);
+
+      await validateSchedule(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'All fields are required for a schedule.'
+        error: 'Arrival time is required if route has no duration.'
       });
       expect(next).not.toHaveBeenCalled();
+
+      Route.findById.mockRestore();
     });
   });
 

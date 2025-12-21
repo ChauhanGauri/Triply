@@ -1,6 +1,21 @@
+
 const authController = require('../../../src/controllers/authController');
 const User = require('../../../src/models/User');
 const mongoose = require('mongoose');
+
+// Silence console.error during tests
+beforeAll(() => {
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+});
+
+afterEach(() => {
+  console.error.mockRestore();
+  jest.spyOn(console, 'error').mockImplementation(() => {});
+});
+
+afterAll(() => {
+  console.error.mockRestore();
+});
 
 describe('AuthController', () => {
   describe('register', () => {

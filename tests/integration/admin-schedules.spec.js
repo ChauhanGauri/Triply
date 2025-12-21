@@ -9,7 +9,7 @@ test.describe('Admin Schedules Management', () => {
     await page.fill('input[name="email"]', 'admin@transport.com');
     await page.fill('input[name="password"]', 'admin123');
     await page.press('input[name="password"]', 'Enter');
-    await page.waitForURL('**/admin/dashboard', { timeout: 10000 });
+    await page.waitForURL(/\/admin/, { timeout: 10000 });
   });
 
   test('should display schedules page', async ({ page }) => {

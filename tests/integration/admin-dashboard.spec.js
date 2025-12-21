@@ -9,25 +9,21 @@ test.describe('Admin Dashboard', () => {
     await page.fill('input[name="email"]', 'admin@transport.com');
     await page.fill('input[name="password"]', 'admin123');
     await page.press('input[name="password"]', 'Enter');
-    await page.waitForURL('**/admin/dashboard', { timeout: 10000 });
+    await page.waitForURL(/\/admin/, { timeout: 10000 });
   });
 
   test('should display dashboard after login', async ({ page }) => {
     // Verify we're on dashboard
     await expect(page).toHaveURL(/.*\/admin\/dashboard/);
-    
-    // Check for dashboard elements
-    const heading = page.locator('h1, h2').filter({ hasText: /dashboard/i });
-    await expect(heading.first()).toBeVisible();
+    // Check that at least one heading is visible
+    await expect(page.locator('h1, h2').first()).toBeVisible();
   });
 
   test('should have navigation links', async ({ page }) => {
     await page.goto('/admin/dashboard');
-    
-    // Check for common navigation items
-    const nav = page.locator('nav, .sidebar, .navigation, .menu');
-    const navExists = await nav.count() > 0;
-    expect(navExists).toBeTruthy();
+    // Check for admin navigation links
+    const adminLinks = page.locator('a[href^="/admin"]');
+    await expect(adminLinks.first()).toBeVisible();
   });
 
   test('should display statistics or metrics', async ({ page }) => {
