@@ -8,6 +8,23 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
   <link rel="stylesheet" href="/css/modern-theme.css">
   <style>
+        .btn-white-purple {
+          background: #fff;
+          color: #667eea;
+          border: 2px solid #667eea;
+          border-radius: 10px;
+          padding: 0.5rem 1.2rem;
+          font-weight: 600;
+          transition: all 0.3s;
+          box-shadow: none;
+        }
+        .btn-white-purple:hover, .btn-white-purple:focus {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: #fff;
+          border-color: #667eea;
+          box-shadow: 0 6px 20px rgba(102, 126, 234, 0.2);
+          text-decoration: none;
+        }
     /* Global overflow prevention */
     html, body {
       overflow-x: hidden !important;
@@ -542,7 +559,7 @@
                           <br><small class="text-muted"><%= route.origin || 'N/A' %> → <%= route.destination || 'N/A' %></small>
                           <% if (route.fare) { %><br><small class="text-success">Fare: ₹<%= route.fare %></small><% } %>
                         </div>
-                        <button class="btn btn-sm btn-outline-primary" onclick="bookRoute('<%= route._id %>')">Book</button>
+                        <button class="btn btn-sm btn-white-purple" onclick="bookRoute('<%= route._id %>')">Book</button>
                       </div>
                     <% }); %>
                     <% if (data.availableRoutes.length > 5) { %>
