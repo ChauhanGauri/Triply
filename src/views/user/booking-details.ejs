@@ -40,10 +40,11 @@
       margin-bottom: 0.5rem;
     }
 
+    /* Purple gradient navigation buttons (same as select-route) */
     .btn-custom {
-      background: linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       border: none;
-      border-radius: 12px;
+      border-radius: 10px;
       padding: 0.75rem 1.5rem;
       font-weight: 600;
       color: white;
@@ -52,21 +53,21 @@
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
+      position: relative;
+      z-index: 1;
     }
-
     .btn-custom:hover {
-      background: linear-gradient(135deg, #DB2777 0%, #D97706 100%);
+      background: linear-gradient(135deg, #5a67d8 0%, #6b46a0 100%);
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(236, 72, 153, 0.3);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
       color: white;
       text-decoration: none;
     }
-
     .btn-outline-custom {
       background: transparent;
-      border: 2px solid #EC4899;
-      color: #EC4899;
-      border-radius: 12px;
+      border: 2px solid #667eea;
+      color: #667eea;
+      border-radius: 10px;
       padding: 0.75rem 1.5rem;
       font-weight: 600;
       transition: all 0.3s ease;
@@ -74,21 +75,27 @@
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
+      position: relative;
+      z-index: 1;
     }
-
     .btn-outline-custom:hover {
-      background: #EC4899;
+      background: #667eea;
       color: white;
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(236, 72, 153, 0.3);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
       text-decoration: none;
     }
 
     .trip-summary {
-      background: linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
-      color: white;
-      border-radius: 15px;
-    }
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.25),
+    rgba(118, 75, 162, 0.25)
+  );
+  color: #000; /* force black text */
+  border-radius: 12px;
+}
+
 
     .passenger-card {
       border: 2px solid #E2E8F0;
@@ -99,8 +106,8 @@
     }
 
     .passenger-card:focus-within {
-      border-color: #EC4899;
-      box-shadow: 0 0 0 0.2rem rgba(236, 72, 153, 0.25);
+      border-color: #667eea;
+      box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.18);
     }
 
     .price-breakdown {
@@ -110,16 +117,19 @@
     }
 
     .total-price {
-      background: linear-gradient(45deg, #10B981, #EC4899);
-      color: white;
-      border-radius: 12px;
-      font-size: 1.25rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      border-radius: 10px;
+      font-size: 1.15rem;
       font-weight: 600;
     }
 
+    /* Purple gradient for gender dropdown */
+    
+
     .step-indicator {
-      background: linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
-      color: white;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
       border-radius: 50%;
       width: 30px;
       height: 30px;
@@ -487,7 +497,7 @@
                 <a href="/user/<%= user.id %>/bookings/new" class="btn btn-outline-secondary">
                   <i class="bi bi-arrow-left"></i> Back to Routes
                 </a>
-                <button type="submit" class="btn btn-success btn-lg">
+                <button type="submit" class="btn btn-success" style="padding: 0.4rem 1.2rem; font-size: 1rem;">
                   <i class="bi bi-credit-card"></i> Proceed to Payment
                 </button>
               </div>
@@ -549,7 +559,7 @@
                 </div>
                 <div class="col-md-3 mb-3">
                   <label class="form-label">Gender *</label>
-                  <select class="form-select" name="passengers[${i-1}][gender]" required>
+                  <select class="form-select gender-gradient-select" name="passengers[${i-1}][gender]" required>
                     <option value="">Select</option>
                     <option value="Male" ${savedPassenger && savedPassenger.gender === 'Male' ? 'selected' : ''}>Male</option>
                     <option value="Female" ${savedPassenger && savedPassenger.gender === 'Female' ? 'selected' : ''}>Female</option>

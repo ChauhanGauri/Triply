@@ -40,10 +40,11 @@
       margin-bottom: 0.5rem;
     }
 
+    /* Purple gradient navigation buttons (same as select-route and booking-details) */
     .btn-custom {
-      background: linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       border: none;
-      border-radius: 12px;
+      border-radius: 10px;
       padding: 0.75rem 1.5rem;
       font-weight: 600;
       color: white;
@@ -52,21 +53,21 @@
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
+      position: relative;
+      z-index: 1;
     }
-
     .btn-custom:hover {
-      background: linear-gradient(135deg, #DB2777 0%, #D97706 100%);
+      background: linear-gradient(135deg, #5a67d8 0%, #6b46a0 100%);
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(236, 72, 153, 0.3);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
       color: white;
       text-decoration: none;
     }
-
     .btn-outline-custom {
       background: transparent;
-      border: 2px solid #EC4899;
-      color: #EC4899;
-      border-radius: 12px;
+      border: 2px solid #667eea;
+      color: #667eea;
+      border-radius: 10px;
       padding: 0.75rem 1.5rem;
       font-weight: 600;
       transition: all 0.3s ease;
@@ -74,13 +75,14 @@
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
+      position: relative;
+      z-index: 1;
     }
-
     .btn-outline-custom:hover {
-      background: #EC4899;
+      background: #667eea;
       color: white;
       transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(236, 72, 153, 0.3);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
       text-decoration: none;
     }
 
@@ -94,24 +96,24 @@
     }
 
     .payment-option:hover {
-      border-color: #EC4899;
-      box-shadow: 0 4px 15px rgba(236, 72, 153, 0.2);
+      border-color: #764ba2;
+      box-shadow: 0 4px 15px rgba(118, 75, 162, 0.18);
     }
 
     .payment-option.selected {
-      border-color: #EC4899;
-      background: linear-gradient(135deg, #FEF7FF 0%, #FFF8F0 100%);
+      border-color: #764ba2;
+      background: linear-gradient(135deg, #ede9fe 0%, #f3e8ff 100%);
     }
 
     .booking-summary {
-      background: linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
-      color: white;
-      border-radius: 15px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.25), rgba(118, 75, 162, 0.25));
+      color: #000;
+      border-radius: 12px;
     }
 
     .step-indicator {
-      background: linear-gradient(135deg, #EC4899 0%, #F59E0B 100%);
-      color: white;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
       border-radius: 50%;
       width: 30px;
       height: 30px;
@@ -122,16 +124,17 @@
     }
 
     .secure-badge {
-      background: linear-gradient(45deg, #10B981, #EC4899);
-      color: white;
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: #fff;
       border-radius: 20px;
       padding: 0.5rem 1rem;
       font-size: 0.875rem;
+      box-shadow: 0 2px 8px rgba(34, 197, 94, 0.15);
     }
 
     .form-control:focus {
-      border-color: #EC4899;
-      box-shadow: 0 0 0 0.2rem rgba(236, 72, 153, 0.25);
+      border-color: #764ba2;
+      box-shadow: 0 0 0 0.2rem rgba(118, 75, 162, 0.18);
     }
 
     @keyframes slideIn {
@@ -210,7 +213,7 @@
             <h5 class="card-title">
               <i class="bi bi-receipt"></i> Booking Summary
             </h5>
-            <hr class="border-white">
+            <hr class="border-black">
             
             <div class="mb-3">
               <div class="d-flex justify-content-between mb-2">
@@ -239,7 +242,7 @@
               </div>
             </div>
 
-            <hr class="border-white">
+            <hr class="border-black">
             <div class="d-flex justify-content-between mb-2">
               <span>Subtotal:</span>
               <span>₹<%= (bookingData.totalPrice / 1.07).toFixed(2) %></span>
@@ -248,7 +251,7 @@
               <span>Taxes & Fees:</span>
               <span>₹<%= (bookingData.totalPrice * 0.07).toFixed(2) %></span>
             </div>
-            <hr class="border-white">
+            <hr class="border-black">
             <div class="d-flex justify-content-between">
               <strong>Total Amount:</strong>
               <strong class="fs-5">₹<%= bookingData.totalPrice %></strong>
@@ -261,9 +264,9 @@
       <div class="col-lg-8">
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <h4 class="mb-0">
+            <h6 class="mb-0" style="font-weight: 600; font-size: 1rem;">
               <i class="bi bi-credit-card"></i> Select Payment Method
-            </h4>
+            </h6>
             <div class="secure-badge">
               <i class="bi bi-shield-check"></i> Secure Payment
             </div>
@@ -401,10 +404,10 @@
 
               <!-- Action Buttons -->
               <div class="d-flex justify-content-between">
-                <a href="/user/<%= user.id %>/bookings/form" class="btn btn-outline-secondary">
+                <a href="/user/<%= user.id %>/bookings/form" class="btn btn-outline-custom">
                   <i class="bi bi-arrow-left"></i> Back to Details
                 </a>
-                <button type="submit" class="btn btn-success btn-lg" id="payButton" disabled>
+                <button type="submit" class="btn btn-success" id="payButton" style="padding: 0.4rem 1.2rem; font-size: 1rem;" disabled>
                   <i class="bi bi-lock"></i> Pay ₹<%= bookingData.totalPrice %>
                 </button>
               </div>
