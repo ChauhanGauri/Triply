@@ -6,10 +6,22 @@ exports.validateRoute = (req, res, next) => {
     next();
 };
 
-exports.validateSchedule = (req, res, next) => {
-    const { routeId, departureTime, arrivalTime } = req.body;
-    if (!routeId || !departureTime || !arrivalTime) {
-        return res.status(400).json({ error: "All fields are required for a schedule." });
+const Route = require('../models/Route');
+exports.validateSchedule = async (req, res, next) => {
+    const { route, departureTime, arrivalTime } = req.body;
+    if (!route || !departureTime) {
+        return res.status(400).json({ error: "Route and departure time are required for a schedule." });
+    }
+    // If arrivalTime is missing, check if route has duration
+    if (!arrivalTime) {
+        try {
+            const foundRoute = await Route.findById(route);
+            if (!foundRoute || !foundRoute.duration) {
+                return res.status(400).json({ error: "Arrival time is required if route has no duration." });
+            }
+        } catch (e) {
+            return res.status(400).json({ error: "Invalid route selected." });
+        }
     }
     next();
 };

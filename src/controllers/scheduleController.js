@@ -5,9 +5,26 @@ const emailService = require('../utils/emailService');
 class ScheduleController {
     async createSchedule(req, res) {
         try {
-            const newSchedule = new Schedule(req.body);
+            let scheduleData = { ...req.body };
+            // If only departureTime is set and arrivalTime is missing, calculate it from route duration
+            if (scheduleData.route && scheduleData.departureTime && !scheduleData.arrivalTime) {
+                const Route = require('../models/Route');
+                const route = await Route.findById(scheduleData.route);
+                if (route && route.duration) {
+                    // Parse departureTime (HH:mm)
+                    const [depHour, depMin] = scheduleData.departureTime.split(":").map(Number);
+                    let depDate = new Date();
+                    depDate.setHours(depHour, depMin, 0, 0);
+                    // Add duration (in minutes)
+                    depDate = new Date(depDate.getTime() + route.duration * 60000);
+                    // Format back to HH:mm
+                    const arrHour = depDate.getHours().toString().padStart(2, '0');
+                    const arrMin = depDate.getMinutes().toString().padStart(2, '0');
+                    scheduleData.arrivalTime = `${arrHour}:${arrMin}`;
+                }
+            }
+            const newSchedule = new Schedule(scheduleData);
             await newSchedule.save();
-            
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.status(201).json({ 
                     message: "Schedule created successfully", 
@@ -19,7 +36,6 @@ class ScheduleController {
         } catch (error) {
             console.error("Error creating schedule:", error);
             let errorMessage = "Error creating schedule";
-            
             if (error.code === 11000) {
                 errorMessage = "A schedule with this information already exists.";
             } else if (error.name === 'ValidationError') {
@@ -28,7 +44,6 @@ class ScheduleController {
             } else if (error.name === 'CastError') {
                 errorMessage = "Invalid route selected or data format error";
             }
-            
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.status(500).json({ 
                     message: errorMessage, 
