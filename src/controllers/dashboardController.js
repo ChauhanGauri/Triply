@@ -10,18 +10,18 @@ class DashboardController {
         try {
             // Cache key for dashboard statistics
             const statsCacheKey = 'dashboard:admin:stats';
-            
+
             // Try to get statistics from cache, or fetch from database
             const stats = await cache.getOrSet(
                 statsCacheKey,
                 async () => {
-            // Get counts for dashboard statistics
-            const totalBookings = await Booking.countDocuments();
-            const totalUsers = await User.countDocuments();
-            const totalRoutes = await Route.countDocuments();
-            const totalSchedules = await Schedule.countDocuments();
-            const confirmedBookings = await Booking.countDocuments({ status: 'confirmed' });
-            const cancelledBookings = await Booking.countDocuments({ status: 'cancelled' });
+                    // Get counts for dashboard statistics
+                    const totalBookings = await Booking.countDocuments();
+                    const totalUsers = await User.countDocuments();
+                    const totalRoutes = await Route.countDocuments();
+                    const totalSchedules = await Schedule.countDocuments();
+                    const confirmedBookings = await Booking.countDocuments({ status: 'confirmed' });
+                    const cancelledBookings = await Booking.countDocuments({ status: 'cancelled' });
 
                     return {
                         totalBookings,
@@ -34,34 +34,34 @@ class DashboardController {
                 },
                 300 // Cache for 5 minutes
             );
-            
+
             // Cache monthly bookings (they change less frequently)
             const monthlyCacheKey = 'dashboard:admin:monthly';
             const sixMonthsAgo = new Date();
             sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-            
+
             const monthlyBookings = await cache.getOrSet(
                 monthlyCacheKey,
                 async () => {
                     return await Booking.aggregate([
-                {
-                    $match: {
-                        createdAt: { $gte: sixMonthsAgo }
-                    }
-                },
-                {
-                    $group: {
-                        _id: {
-                            year: { $year: "$createdAt" },
-                            month: { $month: "$createdAt" }
+                        {
+                            $match: {
+                                createdAt: { $gte: sixMonthsAgo }
+                            }
                         },
-                        count: { $sum: 1 }
-                    }
-                },
-                {
-                    $sort: { "_id.year": 1, "_id.month": 1 }
-                }
-            ]);
+                        {
+                            $group: {
+                                _id: {
+                                    year: { $year: "$createdAt" },
+                                    month: { $month: "$createdAt" }
+                                },
+                                count: { $sum: 1 }
+                            }
+                        },
+                        {
+                            $sort: { "_id.year": 1, "_id.month": 1 }
+                        }
+                    ]);
                 },
                 600 // Cache for 10 minutes
             );
@@ -75,7 +75,7 @@ class DashboardController {
                 },
                 600 // Cache for 10 minutes
             );
-            
+
             // Get recent bookings with populated data (don't cache - always fresh)
             const recentBookings = await Booking.find()
                 .populate('user', 'name email')
@@ -96,15 +96,15 @@ class DashboardController {
                 routes
             };
 
-            res.render('admin/dashboard', { 
+            res.render('admin/dashboard', {
                 title: 'Admin Dashboard - Booking Management',
                 data: dashboardData
             });
         } catch (error) {
             console.error('Error loading admin dashboard:', error);
-            res.status(500).json({ 
-                message: 'Error loading admin dashboard', 
-                error: error.message 
+            res.status(500).json({
+                message: 'Error loading admin dashboard',
+                error: error.message
             });
         }
     }
@@ -113,7 +113,7 @@ class DashboardController {
     async getUserDashboard(req, res) {
         try {
             const userId = req.params.userId || req.user?.id; // Assuming user ID from auth middleware or params
-            
+
             if (!userId) {
                 return res.status(400).json({ message: 'User ID is required' });
             }
@@ -143,9 +143,9 @@ class DashboardController {
                     hasSchedule: !!userBookings[0].schedule,
                     scheduleId: userBookings[0].schedule ? userBookings[0].schedule._id : 'NO SCHEDULE',
                     hasRoute: !!(userBookings[0].schedule && userBookings[0].schedule.route),
-                    routeId: userBookings[0].schedule && userBookings[0].schedule.route ? 
+                    routeId: userBookings[0].schedule && userBookings[0].schedule.route ?
                         userBookings[0].schedule.route._id : 'NO ROUTE',
-                    routeData: userBookings[0].schedule && userBookings[0].schedule.route ? 
+                    routeData: userBookings[0].schedule && userBookings[0].schedule.route ?
                         {
                             routeNumber: userBookings[0].schedule.route.routeNumber,
                             origin: userBookings[0].schedule.route.origin,
@@ -153,7 +153,7 @@ class DashboardController {
                             fare: userBookings[0].schedule.route.fare
                         } : 'No route data'
                 });
-                
+
                 // Check all bookings for missing route data
                 let nullRouteCount = 0;
                 userBookings.forEach((booking, index) => {
@@ -176,10 +176,10 @@ class DashboardController {
 
             // Get upcoming bookings (assuming schedules have departure dates)
             const upcomingBookings = userBookings.filter(booking => {
-                return booking.status === 'confirmed' && 
-                       booking.schedule && 
-                       booking.schedule.departureTime && 
-                       new Date(booking.schedule.departureTime) > new Date();
+                return booking.status === 'confirmed' &&
+                    booking.schedule &&
+                    booking.schedule.departureTime &&
+                    new Date(booking.schedule.departureTime) > new Date();
             });
 
             // Get available routes for new bookings
@@ -212,15 +212,15 @@ class DashboardController {
                 availableRoutes
             };
 
-            res.render('user/dashboard', { 
+            res.render('user/dashboard', {
                 title: 'My Bookings Dashboard',
                 data: dashboardData
             });
         } catch (error) {
             console.error('Error loading user dashboard:', error);
-            res.status(500).json({ 
-                message: 'Error loading user dashboard', 
-                error: error.message 
+            res.status(500).json({
+                message: 'Error loading user dashboard',
+                error: error.message
             });
         }
     }
@@ -314,13 +314,13 @@ class DashboardController {
             const totalBookings = await Booking.countDocuments();
             const confirmedBookings = await Booking.countDocuments({ status: 'confirmed' });
             const cancelledBookings = await Booking.countDocuments({ status: 'cancelled' });
-            
+
             // Today's bookings
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const tomorrow = new Date(today);
             tomorrow.setDate(tomorrow.getDate() + 1);
-            
+
             const todayBookings = await Booking.countDocuments({
                 createdAt: { $gte: today, $lt: tomorrow }
             });
@@ -335,9 +335,9 @@ class DashboardController {
                 }
             });
         } catch (error) {
-            res.status(500).json({ 
-                message: 'Error retrieving booking statistics', 
-                error: error.message 
+            res.status(500).json({
+                message: 'Error retrieving booking statistics',
+                error: error.message
             });
         }
     }
@@ -346,7 +346,7 @@ class DashboardController {
     async getAdminRoutes(req, res) {
         try {
             const routes = await Route.find().sort({ createdAt: -1 });
-            res.render('admin/routes', { 
+            res.render('admin/routes', {
                 title: 'Manage Routes',
                 routes,
                 user: req.session.user,
@@ -364,7 +364,7 @@ class DashboardController {
     }
 
     async getNewRoute(req, res) {
-        res.render('admin/route-form', { 
+        res.render('admin/route-form', {
             title: 'Add New Route',
             route: null,
             user: req.session.user
@@ -374,7 +374,7 @@ class DashboardController {
     async getEditRoute(req, res) {
         try {
             const route = await Route.findById(req.params.id);
-            
+
             if (!route) {
                 return res.status(404).render('error', {
                     title: 'Route Not Found',
@@ -382,8 +382,8 @@ class DashboardController {
                     error: { status: 404, stack: '' }
                 });
             }
-            
-            res.render('admin/route-form', { 
+
+            res.render('admin/route-form', {
                 title: 'Edit Route',
                 route,
                 user: req.session.user
@@ -404,15 +404,15 @@ class DashboardController {
             const schedules = await Schedule.find()
                 .populate('route', 'routeNumber origin destination')
                 .sort({ createdAt: -1 });
-            
+
             // Filter out schedules with null routes (orphaned references)
             const validSchedules = schedules.filter(schedule => schedule.route !== null);
-            
+
             // Log warning if there are orphaned schedules
             if (schedules.length !== validSchedules.length) {
             }
-            
-            res.render('admin/schedules', { 
+
+            res.render('admin/schedules', {
                 title: 'Manage Schedules',
                 schedules: validSchedules,
                 user: req.session.user,
@@ -432,7 +432,7 @@ class DashboardController {
     async getNewSchedule(req, res) {
         try {
             const routes = await Route.find().sort({ routeNumber: 1 });
-            res.render('admin/schedule-form', { 
+            res.render('admin/schedule-form', {
                 title: 'Add New Schedule',
                 schedule: null,
                 routes,
@@ -459,7 +459,7 @@ class DashboardController {
                     error: { status: 404, stack: '' }
                 });
             }
-            res.render('admin/schedule-form', { 
+            res.render('admin/schedule-form', {
                 title: 'Edit Schedule',
                 schedule,
                 routes,
@@ -479,7 +479,7 @@ class DashboardController {
     async getAdminUsers(req, res) {
         try {
             const users = await User.find().sort({ createdAt: -1 });
-            res.render('admin/users', { 
+            res.render('admin/users', {
                 title: 'Manage Users',
                 users,
                 user: req.session.user
@@ -495,7 +495,7 @@ class DashboardController {
     }
 
     async getNewUser(req, res) {
-        res.render('admin/user-form', { 
+        res.render('admin/user-form', {
             title: 'Add New User',
             editUser: null,
             user: req.session.user
@@ -512,7 +512,7 @@ class DashboardController {
                     error: { status: 404, stack: '' }
                 });
             }
-            res.render('admin/user-form', { 
+            res.render('admin/user-form', {
                 title: 'Edit User',
                 editUser,
                 user: req.session.user
@@ -541,7 +541,7 @@ class DashboardController {
                 })
                 .sort({ createdAt: -1 });
 
-            res.render('admin/bookings', { 
+            res.render('admin/bookings', {
                 title: 'Manage Bookings',
                 bookings,
                 user: req.session.user
@@ -564,10 +564,10 @@ class DashboardController {
             const totalUsers = await User.countDocuments();
             const totalRoutes = await Route.countDocuments();
             const totalSchedules = await Schedule.countDocuments();
-            
+
             const confirmedBookings = await Booking.countDocuments({ status: 'confirmed' });
             const cancelledBookings = await Booking.countDocuments({ status: 'cancelled' });
-            
+
             // Revenue calculation (assuming price is stored in bookings)
             const revenueData = await Booking.aggregate([
                 { $match: { status: 'confirmed' } },
@@ -575,7 +575,7 @@ class DashboardController {
             ]);
             const totalRevenue = revenueData.length > 0 ? revenueData[0].totalRevenue : 0;
 
-            res.render('admin/reports', { 
+            res.render('admin/reports', {
                 title: 'Reports & Analytics',
                 stats: {
                     totalBookings,
@@ -612,7 +612,7 @@ class DashboardController {
                 })
                 .sort({ createdAt: -1 });
 
-            res.render('user/bookings', { 
+            res.render('user/bookings', {
                 title: 'My Bookings',
                 bookings,
                 user: req.session.user,
@@ -633,7 +633,7 @@ class DashboardController {
         try {
             const { userId } = req.params;
             const { routeId } = req.query; // Get routeId from query parameters
-            
+
             // Build query for available schedules
             const currentDate = new Date();
             let scheduleQuery = {
@@ -641,16 +641,16 @@ class DashboardController {
                 availableSeats: { $gt: 0 },
                 journeyDate: { $gte: currentDate }
             };
-            
+
             // Add route filter if routeId is provided
             if (routeId) {
                 scheduleQuery.route = routeId;
             }
-            
+
             // Get available schedules (active, with available seats, future dates)
             const schedules = await Schedule.find(scheduleQuery)
-            .populate('route', 'routeNumber origin destination fare')
-            .sort({ journeyDate: 1, departureTime: 1 });
+                .populate('route', 'routeNumber origin destination fare')
+                .sort({ journeyDate: 1, departureTime: 1 });
 
             // Recalculate available seats based on confirmed bookings only
             const Booking = require('../models/Booking');
@@ -660,10 +660,10 @@ class DashboardController {
                     schedule: schedule._id,
                     status: 'confirmed'
                 }).select('seats seatNumbers');
-                
+
                 // Collect all unique booked seat numbers from confirmed bookings
                 const bookedSeatNumbers = new Set();
-                
+
                 confirmedBookings.forEach(booking => {
                     if (booking.seatNumbers && Array.isArray(booking.seatNumbers)) {
                         booking.seatNumbers.forEach(seat => {
@@ -674,11 +674,11 @@ class DashboardController {
                         });
                     }
                 });
-                
+
                 // Calculate available seats: capacity - number of unique booked seats
                 const totalBookedSeats = bookedSeatNumbers.size;
                 const calculatedAvailableSeats = schedule.capacity - totalBookedSeats;
-                
+
                 // Update the schedule object with recalculated values
                 schedule.availableSeats = Math.max(0, calculatedAvailableSeats);
                 schedule.bookedSeats = Array.from(bookedSeatNumbers).sort((a, b) => a - b);
@@ -725,7 +725,7 @@ class DashboardController {
                 });
             }
 
-            res.render('user/booking-details', { 
+            res.render('user/view-booking', {
                 title: 'Booking Details',
                 booking,
                 user: req.session.user
@@ -878,7 +878,7 @@ class DashboardController {
     async getBookingSuccess(req, res) {
         try {
             const { userId, id } = req.params;
-            
+
             // Find the booking with populated data
             const booking = await Booking.findOne({ _id: id, user: userId })
                 .populate({
@@ -917,10 +917,10 @@ class DashboardController {
     async getBrowseRoutes(req, res) {
         try {
             console.log('🗺️ Loading browse routes page');
-            
+
             // Get all active routes, sorted by route number
             const routes = await Route.find({ isActive: true }).sort({ routeNumber: 1 });
-            
+
             console.log(`📋 Found ${routes.length} active routes`);
 
             res.render('user/browse-routes', {
