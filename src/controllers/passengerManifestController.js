@@ -8,13 +8,13 @@ class PassengerManifestController {
     async getManifestForSchedule(req, res) {
         try {
             const { scheduleId } = req.params;
-            
+
             console.log(`Getting passenger manifest for schedule: ${scheduleId}`);
-            
+
             // Verify schedule exists
             const schedule = await Schedule.findById(scheduleId)
                 .populate('route', 'routeNumber origin destination');
-            
+
             if (!schedule) {
                 const errorMessage = 'Schedule not found';
                 if (req.headers.accept && req.headers.accept.includes('application/json')) {
@@ -23,10 +23,10 @@ class PassengerManifestController {
                     return res.redirect('/admin/schedules?error=' + encodeURIComponent(errorMessage));
                 }
             }
-            
+
             // Generate or get existing manifest
             const manifest = await PassengerManifest.generateForSchedule(scheduleId);
-            
+
             // Populate the manifest with full details
             const populatedManifest = await PassengerManifest.findById(manifest._id)
                 .populate('schedule')
@@ -39,9 +39,9 @@ class PassengerManifestController {
                 })
                 .populate('passengers.user', 'name email')
                 .populate('passengers.booking', 'bookingReference totalPrice seats');
-            
+
             console.log(`Manifest generated with ${manifest.totalPassengers} passengers`);
-            
+
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.status(200).json({
                     message: 'Passenger manifest retrieved successfully',
@@ -59,9 +59,9 @@ class PassengerManifestController {
             }
         } catch (error) {
             console.error('Error getting passenger manifest:', error);
-            
+
             const errorMessage = 'Error loading passenger manifest';
-            
+
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.status(500).json({
                     message: errorMessage,
@@ -76,7 +76,7 @@ class PassengerManifestController {
             }
         }
     }
-    
+
     // Get all passenger manifests (admin view)
     async getAllManifests(req, res) {
         try {
@@ -89,7 +89,7 @@ class PassengerManifestController {
                     }
                 })
                 .sort({ createdAt: -1 });
-            
+
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.status(200).json({
                     message: 'Passenger manifests retrieved successfully',
@@ -106,9 +106,9 @@ class PassengerManifestController {
             }
         } catch (error) {
             console.error('Error getting passenger manifests:', error);
-            
+
             const errorMessage = 'Error loading passenger manifests';
-            
+
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.status(500).json({
                     message: errorMessage,
@@ -123,43 +123,55 @@ class PassengerManifestController {
             }
         }
     }
-    
+
     // Update passenger boarding status
     async updatePassengerStatus(req, res) {
         try {
             const { manifestId, passengerId } = req.params;
-            const { boardingStatus, checkedIn } = req.body;
-            
-            const manifest = await PassengerManifest.findById(manifestId);
-            
+            const { boardingStatus } = req.body;
+
+            const manifest = await PassengerManifest.findById(manifestId).populate('schedule');
+
             if (!manifest) {
                 return res.status(404).json({ message: 'Manifest not found' });
             }
-            
+
             const passenger = manifest.passengers.id(passengerId);
-            
+
             if (!passenger) {
                 return res.status(404).json({ message: 'Passenger not found in manifest' });
             }
-            
-            // Update passenger status
-            if (boardingStatus) {
-                passenger.passengerDetails.boardingStatus = boardingStatus;
-            }
-            
-            if (checkedIn !== undefined) {
-                passenger.checkedIn = checkedIn;
-                if (checkedIn) {
-                    passenger.checkedInAt = new Date();
+
+            // --- Prevent editing if the schedule's journey date has already passed ---
+            if (manifest.schedule) {
+                const now = new Date();
+                const journeyDateObj = new Date(manifest.schedule.journeyDate);
+
+                if (manifest.schedule.departureTime) {
+                    const [depHour, depMin] = manifest.schedule.departureTime.split(":").map(Number);
+                    journeyDateObj.setHours(depHour, depMin, 0, 0);
                 } else {
-                    passenger.checkedInAt = null;
+                    journeyDateObj.setHours(23, 59, 59, 999);
+                }
+
+                if (now > journeyDateObj) {
+                    return res.status(400).json({ message: 'Cannot modify a manifest that has already departed or whose journey date is in the past.' });
                 }
             }
-            
-            await manifest.save();
-            
+            // -----------------------------------------------------------------------
+
+            // Update passenger status directly in the database to guarantee save
+            if (boardingStatus) {
+                await PassengerManifest.updateOne(
+                    { _id: manifestId, 'passengers._id': passengerId },
+                    { $set: { 'passengers.$.passengerDetails.boardingStatus': boardingStatus } }
+                );
+                // Also update the local object for the log/response
+                passenger.passengerDetails.boardingStatus = boardingStatus;
+            }
+
             console.log(`Updated passenger ${passenger.passengerDetails.name} status to ${boardingStatus}`);
-            
+
             res.status(200).json({
                 message: 'Passenger status updated successfully',
                 data: passenger
@@ -172,14 +184,14 @@ class PassengerManifestController {
             });
         }
     }
-    
+
     // Finalize manifest (no more changes allowed)
     async finalizeManifest(req, res) {
         try {
             const { manifestId } = req.params;
-            
-            const manifest = await PassengerManifest.findById(manifestId);
-            
+
+            const manifest = await PassengerManifest.findById(manifestId).populate('schedule');
+
             if (!manifest) {
                 const errorMessage = 'Manifest not found';
                 if (req.headers.accept && req.headers.accept.includes('application/json')) {
@@ -188,11 +200,32 @@ class PassengerManifestController {
                     return res.redirect('/admin/manifests?error=' + encodeURIComponent(errorMessage));
                 }
             }
-            
+
+            // --- Prevent finalizing if the schedule's journey date has already passed ---
+            if (manifest.schedule) {
+                const now = new Date();
+                const journeyDateObj = new Date(manifest.schedule.journeyDate);
+                if (manifest.schedule.departureTime) {
+                    const [depHour, depMin] = manifest.schedule.departureTime.split(":").map(Number);
+                    journeyDateObj.setHours(depHour, depMin, 0, 0);
+                } else {
+                    journeyDateObj.setHours(23, 59, 59, 999);
+                }
+                if (now > journeyDateObj) {
+                    const errorMessage = "Cannot finalize a manifest that has already departed or whose journey date is in the past.";
+                    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                        return res.status(400).json({ message: errorMessage });
+                    } else {
+                        return res.status(400).json({ message: errorMessage });
+                    }
+                }
+            }
+            // -----------------------------------------------------------------------
+
             await manifest.finalizeManifest();
-            
+
             console.log(`Manifest ${manifestId} finalized`);
-            
+
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.status(200).json({
                     message: 'Manifest finalized successfully',
@@ -203,9 +236,9 @@ class PassengerManifestController {
             }
         } catch (error) {
             console.error('Error finalizing manifest:', error);
-            
+
             const errorMessage = 'Error finalizing manifest';
-            
+
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.status(500).json({
                     message: errorMessage,
@@ -216,22 +249,43 @@ class PassengerManifestController {
             }
         }
     }
-    
+
     // Mark bus as departed
     async markDeparted(req, res) {
         try {
             const { manifestId } = req.params;
-            
-            const manifest = await PassengerManifest.findById(manifestId);
-            
+
+            const manifest = await PassengerManifest.findById(manifestId).populate('schedule');
+
             if (!manifest) {
                 return res.status(404).json({ message: 'Manifest not found' });
             }
-            
+
+            // --- Prevent marking departed if the schedule's journey date has already passed ---
+            if (manifest.schedule) {
+                const now = new Date();
+                const journeyDateObj = new Date(manifest.schedule.journeyDate);
+                if (manifest.schedule.departureTime) {
+                    const [depHour, depMin] = manifest.schedule.departureTime.split(":").map(Number);
+                    journeyDateObj.setHours(depHour, depMin, 0, 0);
+                } else {
+                    journeyDateObj.setHours(23, 59, 59, 999);
+                }
+                if (now > journeyDateObj) {
+                    const errorMessage = "Cannot perform operations on a manifest that has already departed or whose journey date is in the past.";
+                    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                        return res.status(400).json({ message: errorMessage });
+                    } else {
+                        return res.status(400).json({ message: errorMessage });
+                    }
+                }
+            }
+            // -----------------------------------------------------------------------
+
             await manifest.markDeparted();
-            
+
             console.log(`Manifest ${manifestId} marked as departed`);
-            
+
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.status(200).json({
                     message: 'Bus marked as departed successfully',
@@ -242,9 +296,9 @@ class PassengerManifestController {
             }
         } catch (error) {
             console.error('Error marking bus as departed:', error);
-            
+
             const errorMessage = 'Error marking bus as departed';
-            
+
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.status(500).json({
                     message: errorMessage,
@@ -255,12 +309,12 @@ class PassengerManifestController {
             }
         }
     }
-    
+
     // Get manifest by ID for detailed view
     async getManifestById(req, res) {
         try {
             const { manifestId } = req.params;
-            
+
             const manifest = await PassengerManifest.findById(manifestId)
                 .populate({
                     path: 'schedule',
@@ -271,7 +325,7 @@ class PassengerManifestController {
                 })
                 .populate('passengers.user', 'name email')
                 .populate('passengers.booking', 'bookingReference totalPrice seats');
-            
+
             if (!manifest) {
                 const errorMessage = 'Manifest not found';
                 if (req.headers.accept && req.headers.accept.includes('application/json')) {
@@ -284,7 +338,7 @@ class PassengerManifestController {
                     });
                 }
             }
-            
+
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.status(200).json({
                     message: 'Manifest retrieved successfully',
@@ -302,9 +356,9 @@ class PassengerManifestController {
             }
         } catch (error) {
             console.error('Error getting manifest:', error);
-            
+
             const errorMessage = 'Error loading manifest';
-            
+
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.status(500).json({
                     message: errorMessage,
@@ -319,15 +373,15 @@ class PassengerManifestController {
             }
         }
     }
-    
+
     // Manual sync all passenger manifests
     async syncAllManifests(req, res) {
         try {
             console.log('Manual sync triggered by admin');
-            
+
             // Get all confirmed bookings to count
             const totalBookings = await Booking.countDocuments({ status: 'confirmed' });
-            
+
             if (totalBookings === 0) {
                 const message = 'No confirmed bookings found to sync';
                 if (req.headers.accept && req.headers.accept.includes('application/json')) {
@@ -336,7 +390,7 @@ class PassengerManifestController {
                     return res.redirect('/admin/manifests?success=' + encodeURIComponent(message));
                 }
             }
-            
+
             // Run the sync (this is async but we don't wait for it to complete)
             syncPassengerManifests()
                 .then(() => {
@@ -345,9 +399,9 @@ class PassengerManifestController {
                 .catch((error) => {
                     console.error('Background sync failed:', error);
                 });
-            
+
             const message = `Sync started for ${totalBookings} confirmed bookings. This may take a few moments.`;
-            
+
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.status(200).json({
                     message,
@@ -356,12 +410,12 @@ class PassengerManifestController {
             } else {
                 res.redirect('/admin/manifests?success=' + encodeURIComponent(message));
             }
-            
+
         } catch (error) {
             console.error('Error starting sync:', error);
-            
+
             const errorMessage = 'Error starting passenger manifest sync';
-            
+
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
                 res.status(500).json({
                     message: errorMessage,

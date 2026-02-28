@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title || "Route Form" %></title>
+  <title>
+    <%= title || "Route Form" %>
+  </title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
   <style>
@@ -165,6 +168,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <div class="container-fluid p-0">
@@ -228,12 +232,12 @@
                     <div class="col-md-6 mb-3">
                       <label for="routeNumber" class="form-label">Route Number *</label>
                       <input type="text" class="form-control" id="routeNumber" name="routeNumber"
-                             value="<%= route ? route.routeNumber : '' %>" required>
+                        value="<%= route ? route.routeNumber : '' %>" required>
                     </div>
                     <div class="col-md-6 mb-3">
                       <label for="fare" class="form-label">Fare (₹) *</label>
                       <input type="number" class="form-control" id="fare" name="fare" step="0.01" min="0"
-                             value="<%= route ? route.fare : '' %>" required>
+                        value="<%= route ? route.fare : '' %>" required>
                     </div>
                   </div>
 
@@ -258,7 +262,7 @@
                     <div class="col-md-6 mb-3">
                       <label for="distance" class="form-label">Distance (km) *</label>
                       <input type="number" class="form-control" id="distance" name="distance" step="0.1" min="0"
-                             value="<%= route ? route.distance : '' %>" readonly required>
+                        value="<%= route ? route.distance : '' %>" readonly required>
                       <small class="form-text text-muted">Auto-calculated based on origin and destination</small>
                     </div>
                     <div class="col-md-6 mb-3">
@@ -267,34 +271,37 @@
                         <div class="col-6">
                           <div class="input-group">
                             <input type="number" class="form-control" id="durationHours" min="0" max="23"
-                                   value="<%= route ? Math.floor(route.duration / 60) : 0 %>" placeholder="0">
+                              value="<%= route ? Math.floor(route.duration / 60) : 0 %>" placeholder="0">
                             <span class="input-group-text">hrs</span>
                           </div>
                         </div>
                         <div class="col-6">
                           <div class="input-group">
                             <input type="number" class="form-control" id="durationMinutes" min="0" max="59"
-                                   value="<%= route ? route.duration % 60 : 0 %>" placeholder="0">
+                              value="<%= route ? route.duration % 60 : 0 %>" placeholder="0">
                             <span class="input-group-text">mins</span>
                           </div>
                         </div>
                       </div>
                       <!-- Hidden field for actual duration in minutes -->
-                      <input type="hidden" id="duration" name="duration" value="<%= route ? route.duration : '' %>" required>
+                      <input type="hidden" id="duration" name="duration" value="<%= route ? route.duration : '' %>"
+                        required>
                       <small class="form-text text-muted">You can adjust the auto-calculated duration</small>
                     </div>
                   </div>
 
                   <div class="mb-3">
                     <label for="description" class="form-label">Description (Optional)</label>
-                    <textarea class="form-control" id="description" name="description" rows="3" placeholder="Auto-generated description will appear here..."><%= route ? route.description || '' : '' %></textarea>
-                    <small class="form-text text-muted">Auto-generated based on route. You can edit or clear this.</small>
+                    <textarea class="form-control" id="description" name="description" rows="3"
+                      placeholder="Auto-generated description will appear here..."><%= route ? route.description || '' : '' %></textarea>
+                    <small class="form-text text-muted">Auto-generated based on route. You can edit or clear
+                      this.</small>
                   </div>
 
                   <div class="mb-3">
                     <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="isActive" name="isActive"
-                             <%= route ? (route.isActive ? 'checked' : '') : 'checked' %>>
+                      <input class="form-check-input" type="checkbox" id="isActive" name="isActive" <%=route ?
+                        (route.isActive ? 'checked' : '' ) : 'checked' %>>
                       <label class="form-check-label" for="isActive">
                         Active Route
                       </label>
@@ -320,7 +327,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  
+
   <script>
     // Major Indian cities with their states and approximate distances
     const cities = [
@@ -341,7 +348,7 @@
       { name: 'Lucknow', state: 'Uttar Pradesh', region: 'North' },
       { name: 'Varanasi', state: 'Uttar Pradesh', region: 'North' },
       { name: 'Kanpur', state: 'Uttar Pradesh', region: 'North' },
-      
+
       // West India
       { name: 'Mumbai', state: 'Maharashtra', region: 'West' },
       { name: 'Pune', state: 'Maharashtra', region: 'West' },
@@ -350,7 +357,7 @@
       { name: 'Surat', state: 'Gujarat', region: 'West' },
       { name: 'Vadodara', state: 'Gujarat', region: 'West' },
       { name: 'Goa', state: 'Goa', region: 'West' },
-      
+
       // South India
       { name: 'Bangalore', state: 'Karnataka', region: 'South' },
       { name: 'Mysore', state: 'Karnataka', region: 'South' },
@@ -364,7 +371,7 @@
       { name: 'Kochi', state: 'Kerala', region: 'South' },
       { name: 'Thiruvananthapuram', state: 'Kerala', region: 'South' },
       { name: 'Kozhikode', state: 'Kerala', region: 'South' },
-      
+
       // East India
       { name: 'Kolkata', state: 'West Bengal', region: 'East' },
       { name: 'Patna', state: 'Bihar', region: 'East' },
@@ -535,17 +542,17 @@
     // Function to get distance between two cities
     function getDistance(origin, destination) {
       if (origin === destination) return 0;
-      
+
       // Check direct route
       if (distanceMatrix[origin] && distanceMatrix[origin][destination]) {
         return distanceMatrix[origin][destination];
       }
-      
+
       // Check reverse route
       if (distanceMatrix[destination] && distanceMatrix[destination][origin]) {
         return distanceMatrix[destination][origin];
       }
-      
+
       return null;
     }
 
@@ -559,55 +566,55 @@
     // Function to generate description based on route details
     function generateDescription(origin, destination, distance) {
       if (!origin || !destination || !distance) return '';
-      
+
       const originCity = cities.find(c => c.name === origin);
       const destCity = cities.find(c => c.name === destination);
-      
+
       if (!originCity || !destCity) return '';
-      
+
       const hours = Math.floor(distance / 50);
       const minutes = Math.round((distance / 50 - hours) * 60);
       const timeStr = hours > 0 ? `${hours} hour${hours > 1 ? 's' : ''}${minutes > 0 ? ` ${minutes} min` : ''}` : `${minutes} minutes`;
-      
+
       // Different templates based on route characteristics
       let description = '';
-      
+
       if (distance < 150) {
         // Short distance routes
         description = `Direct express route connecting ${origin} (${originCity.state}) to ${destination} (${destCity.state}). ` +
-                     `Comfortable ${distance}km journey in approximately ${timeStr}. ` +
-                     `Perfect for daily commuters and quick city-to-city travel.`;
+          `Comfortable ${distance}km journey in approximately ${timeStr}. ` +
+          `Perfect for daily commuters and quick city-to-city travel.`;
       } else if (distance < 500) {
         // Medium distance routes
         description = `Premium intercity bus service from ${origin} to ${destination}, covering ${distance}km. ` +
-                     `Travel time approximately ${timeStr}. ` +
-                     `Connecting ${originCity.state} and ${destCity.state} with comfortable seating and regular stops.`;
+          `Travel time approximately ${timeStr}. ` +
+          `Connecting ${originCity.state} and ${destCity.state} with comfortable seating and regular stops.`;
       } else if (distance < 1000) {
         // Long distance routes
         description = `Long-distance express service connecting ${origin} (${originCity.state}) to ${destination} (${destCity.state}). ` +
-                     `${distance}km journey with an estimated travel time of ${timeStr}. ` +
-                     `Equipped with modern amenities for a comfortable long-haul journey.`;
+          `${distance}km journey with an estimated travel time of ${timeStr}. ` +
+          `Equipped with modern amenities for a comfortable long-haul journey.`;
       } else {
         // Very long distance routes
         description = `Premium long-haul service from ${origin} to ${destination}, spanning ${distance}km across ${originCity.state} and ${destCity.state}. ` +
-                     `Journey duration approximately ${timeStr}. ` +
-                     `Luxury coaches with sleeper berths, rest stops, and onboard facilities for maximum comfort.`;
+          `Journey duration approximately ${timeStr}. ` +
+          `Luxury coaches with sleeper berths, rest stops, and onboard facilities for maximum comfort.`;
       }
-      
+
       // Add regional context
       if (originCity.region !== destCity.region) {
         description += ` This inter-regional route connects ${originCity.region} India with ${destCity.region} India.`;
       }
-      
+
       return description;
     }
 
     // Function to get valid destinations based on origin
     function getValidDestinations(origin) {
       if (!origin) return [];
-      
+
       const validDestinations = [];
-      
+
       cities.forEach(city => {
         if (city.name !== origin) {
           const distance = getDistance(origin, city.name);
@@ -619,7 +626,7 @@
           }
         }
       });
-      
+
       // Sort by distance
       return validDestinations.sort((a, b) => a.distance - b.distance);
     }
@@ -628,7 +635,7 @@
     function populateOrigin() {
       const originSelect = document.getElementById('origin');
       const currentOrigin = '<%= route ? route.origin : "" %>';
-      
+
       // Group cities by region
       const regions = {};
       cities.forEach(city => {
@@ -637,12 +644,12 @@
         }
         regions[city.region].push(city);
       });
-      
+
       // Add cities grouped by region
       Object.keys(regions).sort().forEach(region => {
         const optgroup = document.createElement('optgroup');
         optgroup.label = region + ' India';
-        
+
         regions[region].sort((a, b) => a.name.localeCompare(b.name)).forEach(city => {
           const option = document.createElement('option');
           option.value = city.name;
@@ -652,7 +659,7 @@
           }
           optgroup.appendChild(option);
         });
-        
+
         originSelect.appendChild(optgroup);
       });
     }
@@ -661,14 +668,14 @@
     function populateDestination(origin) {
       const destinationSelect = document.getElementById('destination');
       const currentDestination = '<%= route ? route.destination : "" %>';
-      
+
       // Clear existing options except the first one
       destinationSelect.innerHTML = '<option value="">Select Destination</option>';
-      
+
       if (!origin) return;
-      
-      const validDestinations = getValidDestinations(origin);
-      
+
+      const validDestinations = cities.filter(city => city.name !== origin);
+
       if (validDestinations.length === 0) {
         const option = document.createElement('option');
         option.value = '';
@@ -677,7 +684,7 @@
         destinationSelect.appendChild(option);
         return;
       }
-      
+
       // Group by region
       const regions = {};
       validDestinations.forEach(city => {
@@ -686,54 +693,81 @@
         }
         regions[city.region].push(city);
       });
-      
+
       Object.keys(regions).sort().forEach(region => {
         const optgroup = document.createElement('optgroup');
         optgroup.label = region + ' India';
-        
+
         regions[region].forEach(city => {
           const option = document.createElement('option');
           option.value = city.name;
-          option.textContent = `${city.name}, ${city.state} (${city.distance} km)`;
-          option.dataset.distance = city.distance;
+          option.textContent = `${city.name}, ${city.state}`;
           if (currentDestination === city.name) {
             option.selected = true;
           }
           optgroup.appendChild(option);
         });
-        
+
         destinationSelect.appendChild(optgroup);
       });
     }
 
-    // Update distance and duration when destination changes
-    function updateDistanceAndDuration() {
+    // Update distance and duration using Gemini API when destination changes
+    async function updateDistanceAndDuration() {
       const origin = document.getElementById('origin').value;
       const destinationSelect = document.getElementById('destination');
       const destination = destinationSelect.value;
       const distanceInput = document.getElementById('distance');
       const durationInput = document.getElementById('duration');
-      
+      const hrsInput = document.getElementById('durationHours');
+      const minsInput = document.getElementById('durationMinutes');
+
       if (origin && destination) {
-        const selectedOption = destinationSelect.options[destinationSelect.selectedIndex];
-        const distance = parseFloat(selectedOption.dataset.distance);
-        
-        if (distance) {
-          distanceInput.value = distance;
-          const duration = calculateDuration(distance);
-          durationInput.value = duration;
-          
-          // Update hours and minutes fields
-          const hours = Math.floor(duration / 60);
-          const minutes = duration % 60;
-          document.getElementById('durationHours').value = hours;
-          document.getElementById('durationMinutes').value = minutes;
+        try {
+          // Show calculating state
+          distanceInput.placeholder = 'Calculating using AI...';
+          hrsInput.placeholder = '...';
+          minsInput.placeholder = '...';
+          distanceInput.value = '';
+
+          const response = await fetch('/api/routes/calculate-distance', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ origin, destination })
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to calculate distance');
+          }
+          const data = await response.json();
+
+          const distance = data.distance;
+          const duration = data.duration;
+
+          if (distance && duration) {
+            distanceInput.value = distance;
+            durationInput.value = duration;
+
+            // Update hours and minutes fields
+            const hours = Math.floor(duration / 60);
+            const minutes = duration % 60;
+            hrsInput.value = hours;
+            minsInput.value = minutes;
+            updateDuration(); // Trigger validation
+          }
+        } catch (error) {
+          console.error('Error fetching Gemini calculation:', error);
+          alert('Failed to automatically calculate route using AI. Please enter values manually.');
+          distanceInput.placeholder = 'Enter manually (km)';
+          hrsInput.placeholder = '0';
+          minsInput.placeholder = '0';
+          distanceInput.removeAttribute('readonly'); // Allow manual entry if AI fails
         }
       } else {
         distanceInput.value = '';
         durationInput.value = '';
-        document.getElementById('durationHours').value = 0;
-        document.getElementById('durationMinutes').value = 0;
+        hrsInput.value = 0;
+        minsInput.value = 0;
       }
     }
 
@@ -747,7 +781,7 @@
       const minutes = parseInt(minutesInput.value) || 0;
       const totalMinutes = (hours * 60) + minutes;
       durationInput.value = totalMinutes;
-      
+
       // Validation: Duration must be at least 1 minute
       if (totalMinutes < 1) {
         durationInput.setCustomValidity('Duration must be at least 1 minute');
@@ -762,7 +796,7 @@
       minutesInput.addEventListener('input', updateDuration);
 
       // Validate minutes don't exceed 59
-      minutesInput.addEventListener('change', function() {
+      minutesInput.addEventListener('change', function () {
         if (this.value > 59) {
           this.value = 59;
           updateDuration();
@@ -774,29 +808,29 @@
     }
 
     // Initialize on page load
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       populateOrigin();
-      
+
       const originSelect = document.getElementById('origin');
       const destinationSelect = document.getElementById('destination');
-      
+
       // If editing existing route, populate destination
       if (originSelect.value) {
         populateDestination(originSelect.value);
         updateDistanceAndDuration();
       }
-      
+
       // Event listeners
-      originSelect.addEventListener('change', function() {
+      originSelect.addEventListener('change', function () {
         populateDestination(this.value);
         updateDistanceAndDuration();
       });
-      
+
       destinationSelect.addEventListener('change', updateDistanceAndDuration);
 
       // Validate form before submission
       const form = document.querySelector('form');
-      form.addEventListener('submit', function(e) {
+      form.addEventListener('submit', function (e) {
         const totalMinutes = parseInt(durationInput.value);
         if (totalMinutes < 1) {
           e.preventDefault();
@@ -808,4 +842,5 @@
     });
   </script>
 </body>
+
 </html>

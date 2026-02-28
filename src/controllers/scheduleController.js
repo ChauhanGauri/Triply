@@ -26,9 +26,9 @@ class ScheduleController {
             const newSchedule = new Schedule(scheduleData);
             await newSchedule.save();
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
-                res.status(201).json({ 
-                    message: "Schedule created successfully", 
-                    data: newSchedule 
+                res.status(201).json({
+                    message: "Schedule created successfully",
+                    data: newSchedule
                 });
             } else {
                 res.redirect('/admin/schedules?success=Schedule created successfully');
@@ -45,9 +45,9 @@ class ScheduleController {
                 errorMessage = "Invalid route selected or data format error";
             }
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
-                res.status(500).json({ 
-                    message: errorMessage, 
-                    error: error.message 
+                res.status(500).json({
+                    message: errorMessage,
+                    error: error.message
                 });
             } else {
                 res.redirect(`/admin/schedules?error=${encodeURIComponent(errorMessage)}`);
@@ -58,14 +58,14 @@ class ScheduleController {
     async getAllSchedules(req, res) {
         try {
             const schedules = await Schedule.find().populate('route');
-            
+
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
-                res.status(200).json({ 
-                    message: "Schedules retrieved successfully", 
-                    data: schedules 
+                res.status(200).json({
+                    message: "Schedules retrieved successfully",
+                    data: schedules
                 });
             } else {
-                res.render('admin/schedules', { 
+                res.render('admin/schedules', {
                     title: 'Manage Schedules',
                     schedules: schedules,
                     user: req.session.user,
@@ -76,9 +76,9 @@ class ScheduleController {
         } catch (error) {
             console.error("Error retrieving schedules:", error);
             if (req.headers.accept && req.headers.accept.includes('application/json')) {
-                res.status(500).json({ 
-                    message: "Error retrieving schedules", 
-                    error: error.message 
+                res.status(500).json({
+                    message: "Error retrieving schedules",
+                    error: error.message
                 });
             } else {
                 res.redirect('/admin/schedules?error=Error retrieving schedules');
@@ -93,15 +93,15 @@ class ScheduleController {
             if (!schedule) {
                 return res.status(404).json({ message: "Schedule not found" });
             }
-            res.status(200).json({ 
-                message: "Schedule retrieved successfully", 
-                data: schedule 
+            res.status(200).json({
+                message: "Schedule retrieved successfully",
+                data: schedule
             });
         } catch (error) {
             console.error("Error retrieving schedule:", error);
-            res.status(500).json({ 
-                message: "Error retrieving schedule", 
-                error: error.message 
+            res.status(500).json({
+                message: "Error retrieving schedule",
+                error: error.message
             });
         }
     }
@@ -109,35 +109,61 @@ class ScheduleController {
     async updateSchedule(req, res) {
         try {
             const { id } = req.params;
-            
+
             // Get old schedule before update
             const oldSchedule = await Schedule.findById(id).populate('route');
-            
-            const updatedSchedule = await Schedule.findByIdAndUpdate(id, req.body, { 
+
+            if (!oldSchedule) {
+                return res.status(404).json({ message: "Schedule not found" });
+            }
+
+            // --- Prevent editing if the schedule's journey date has already passed ---
+            const now = new Date();
+            const journeyDateObj = new Date(oldSchedule.journeyDate);
+
+            // Extract HH:mm from departure time to create a precise Date object for comparison
+            if (oldSchedule.departureTime) {
+                const [depHour, depMin] = oldSchedule.departureTime.split(":").map(Number);
+                journeyDateObj.setHours(depHour, depMin, 0, 0);
+            } else {
+                journeyDateObj.setHours(23, 59, 59, 999); // Fallback to end of day if no time
+            }
+
+            if (now > journeyDateObj) {
+                const errorMessage = "Cannot modify a schedule that has already departed or whose journey date is in the past.";
+                if (req.headers.accept && req.headers.accept.includes('application/json')) {
+                    return res.status(400).json({ message: errorMessage });
+                } else {
+                    return res.status(400).json({ message: errorMessage }); // The frontend fetch currently expects JSON for this route
+                }
+            }
+            // -----------------------------------------------------------------------
+
+            const updatedSchedule = await Schedule.findByIdAndUpdate(id, req.body, {
                 new: true,
                 runValidators: true
             }).populate('route');
-            
+
             if (!updatedSchedule) {
                 return res.status(404).json({ message: "Schedule not found" });
             }
-            
+
             // Check if critical fields changed (time or status)
             const timeChanged = oldSchedule && (
                 oldSchedule.departureTime !== updatedSchedule.departureTime ||
                 oldSchedule.arrivalTime !== updatedSchedule.arrivalTime
             );
             const statusChanged = oldSchedule && oldSchedule.isActive !== updatedSchedule.isActive;
-            
+
             // Send email notifications if schedule changed
             if (timeChanged || statusChanged) {
                 try {
                     // Find all bookings for this schedule
-                    const affectedBookings = await Booking.find({ 
+                    const affectedBookings = await Booking.find({
                         schedule: id,
                         status: { $in: ['confirmed', 'pending'] }
                     }).populate('userId');
-                    
+
                     if (affectedBookings.length > 0) {
                         await emailService.sendScheduleChangeAlert(
                             updatedSchedule,
@@ -150,16 +176,16 @@ class ScheduleController {
                     // Continue even if email fails
                 }
             }
-            
-            res.status(200).json({ 
-                message: "Schedule updated successfully", 
-                data: updatedSchedule 
+
+            res.status(200).json({
+                message: "Schedule updated successfully",
+                data: updatedSchedule
             });
         } catch (error) {
             console.error("Error updating schedule:", error);
-            res.status(500).json({ 
-                message: "Error updating schedule", 
-                error: error.message 
+            res.status(500).json({
+                message: "Error updating schedule",
+                error: error.message
             });
         }
     }
@@ -171,13 +197,13 @@ class ScheduleController {
             if (!deletedSchedule) {
                 return res.status(404).json({ message: "Schedule not found" });
             }
-            
+
             res.status(200).json({ message: "Schedule deleted successfully" });
         } catch (error) {
             console.error("Error deleting schedule:", error);
-            res.status(500).json({ 
-                message: "Error deleting schedule", 
-                error: error.message 
+            res.status(500).json({
+                message: "Error deleting schedule",
+                error: error.message
             });
         }
     }
@@ -187,15 +213,15 @@ class ScheduleController {
         try {
             const now = new Date();
             now.setHours(0, 0, 0, 0); // Start of today to show all schedules for today
-            
-            
+
+
             const schedules = await Schedule.find({
                 isActive: true,
                 availableSeats: { $gt: 0 },
                 journeyDate: { $gte: now }
             })
-            .populate('route', 'routeNumber origin destination fare')
-            .sort({ journeyDate: 1, departureTime: 1 });
+                .populate('route', 'routeNumber origin destination fare')
+                .sort({ journeyDate: 1, departureTime: 1 });
 
             // If you want to use the first schedule, do something like:
             // if (schedules.length > 0) {
